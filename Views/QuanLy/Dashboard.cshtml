@@ -1,0 +1,82 @@
+﻿@model LibraryOS.Models.QuanLyDashboardVM
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard";
+    ViewData["ActiveMenu"] = "dashboard";
+}
+
+<div class="stats-grid">
+    <div class="stat-card" style="--c:#4d9ef7;--g:rgba(77,158,247,0.1)">
+        <div class="stat-icon">📚</div>
+        <div class="stat-val">@Model.TongDauSach</div>
+        <div class="stat-lbl">Đầu sách</div>
+    </div>
+    <div class="stat-card" style="--c:#2dd4a6;--g:rgba(45,212,166,0.09)">
+        <div class="stat-icon">📦</div>
+        <div class="stat-val">@Model.TongCuonSach</div>
+        <div class="stat-lbl">Cuốn trong kho</div>
+    </div>
+    <div class="stat-card" style="--c:#f06292;--g:rgba(240,98,146,0.09)">
+        <div class="stat-icon">📖</div>
+        <div class="stat-val">@Model.DangMuon</div>
+        <div class="stat-lbl">Đang được mượn</div>
+    </div>
+    <div class="stat-card" style="--c:#a78bfa;--g:rgba(167,139,250,0.09)">
+        <div class="stat-icon">🪪</div>
+        <div class="stat-val">@Model.TheHopLe</div>
+        <div class="stat-lbl">Thẻ hợp lệ</div>
+    </div>
+</div>
+
+<div class="pgrid">
+    <div class="panel">
+        <div class="ph">
+            <div><div class="pt">Phiếu mượn gần đây</div></div>
+            <a asp-action="PhieuMuon" class="btn b-ghost btn-sm">Xem tất cả →</a>
+        </div>
+        <table>
+            <thead><tr><th>Mã PM</th><th>Độc giả</th><th>Ngày mượn</th><th>Số cuốn</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+                @foreach (var pm in Model.PhieuMuonGanDay)
+                {
+                    <tr>
+                        <td class="mo">@pm.MaPM</td>
+                        <td>@pm.HoTenDG</td>
+                        <td class="mo">@pm.NgayMuon</td>
+                        <td>@pm.SoCuon</td>
+                        <td>
+                            <span class="pill @(pm.TinhTrang == "Đang mượn" ? "p-blue" : pm.TinhTrang == "Quá hạn" ? "p-rose" : "p-teal")">
+                                @pm.TinhTrang
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="panel">
+        <div class="ph">
+            <div><div class="pt">Danh sách nhân viên</div></div>
+            <a asp-action="NhanVien" class="btn b-ghost btn-sm">Quản lý →</a>
+        </div>
+        <table>
+            <thead><tr><th>Mã NV</th><th>Họ tên</th><th>SĐT</th><th>Vai trò</th></tr></thead>
+            <tbody>
+                @foreach (var nv in Model.DanhSachNV)
+                {
+                    <tr>
+                        <td class="mo">@nv.MaNV</td>
+                        <td>@nv.HoTenNV</td>
+                        <td class="mo">@nv.SdtNV</td>
+                        <td>
+                            <span class="pill @(nv.VaiTro == "Quản lý" ? "p-blue" : "p-teal")">
+                                @nv.VaiTro
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

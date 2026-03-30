@@ -1,0 +1,179 @@
+﻿@using System.Security.Claims
+@{
+    var role = User.FindFirstValue("Role") ?? "";
+    var fullName = User.FindFirstValue("FullName") ?? "";
+    var dbRole = User.FindFirstValue("DbRole") ?? "";
+    var tenRole = role == "ql" ? "Quản lý" : role == "tt" ? "Thủ thư" : "Độc giả";
+    var avInit = role == "ql" ? "QL" : role == "tt" ? "TT" : "DG";
+    var avCls = role == "ql" ? "av-ql" : role == "tt" ? "av-tt" : "av-dg";
+    var tagCls = role == "ql" ? "tag-ql" : role == "tt" ? "tag-tt" : "tag-dg";
+    var sbGlow = role == "ql" ? "rgba(77,158,247,0.1)" : role == "tt" ? "rgba(45,212,166,0.09)" : "rgba(240,98,146,0.09)";
+    var accent = role == "ql" ? "#4d9ef7" : role == "tt" ? "#2dd4a6" : "#f06292";
+    var cur = ViewData["ActiveMenu"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] — LibraryOS</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .sidebar {
+            --sb-glow: @sbGlow;
+        }
+
+        :root {
+            --role-accent: @accent;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="s-logo">
+                <div class="s-logo-row">
+                    <div class="s-logo-icon">📚</div>
+                    <div>
+                        <div class="s-logo-name">LibraryOS</div>
+                        <div class="s-logo-sub">v2.1 · Oracle DB</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="nav">
+                @if (role == "ql")
+                {
+                    <div class="nav-section">TỔNG QUAN</div>
+                    <a class="nav-item @(cur=="dashboard"?"active":"")" asp-controller="QuanLy" asp-action="Dashboard">
+                        <div class="nav-dot" style="background:@(cur == "dashboard" ? "#4d9ef7" : "#4d9ef733")"></div>Dashboard
+                    </a>
+
+                    <div class="nav-section">QUẢN LÝ</div>
+                    <a class="nav-item @(cur=="nhanvien"?"active":"")" asp-controller="QuanLy" asp-action="NhanVien">
+                        <div class="nav-dot" style="background:@(cur == "nhanvien" ? "#a78bfa" : "#a78bfa33")"></div>Nhân viên
+                    </a>
+                    <a class="nav-item @(cur=="sach"?"active":"")" asp-controller="QuanLy" asp-action="Sach">
+                        <div class="nav-dot" style="background:@(cur == "sach" ? "#4d9ef7" : "#4d9ef733")"></div>Sách & Kho
+                    </a>
+                    <a class="nav-item @(cur=="nxb"?"active":"")" asp-controller="QuanLy" asp-action="NhaXuatBan">
+                        <div class="nav-dot" style="background:@(cur == "nxb" ? "#4d9ef7" : "#4d9ef733")"></div>Nhà xuất bản
+                    </a>
+                    <a class="nav-item @(cur=="tacgia"?"active":"")" asp-controller="QuanLy" asp-action="TacGia">
+                        <div class="nav-dot" style="background:@(cur == "tacgia" ? "#4d9ef7" : "#4d9ef733")"></div>Tác giả
+                    </a>
+                    <a class="nav-item @(cur=="theloai"?"active":"")" asp-controller="QuanLy" asp-action="TheLoai">
+                        <div class="nav-dot" style="background:@(cur == "theloai" ? "#4d9ef7" : "#4d9ef733")"></div>Thể loại
+                    </a>
+
+                    <div class="nav-section">NGHIỆP VỤ</div>
+                    <a class="nav-item @(cur=="phieumuon"?"active":"")" asp-controller="QuanLy" asp-action="PhieuMuon">
+                        <div class="nav-dot" style="background:@(cur == "phieumuon" ? "#2dd4a6" : "#2dd4a633")"></div>Phiếu mượn
+                    </a>
+                    <div class="nav-section">BÁO CÁO</div>
+                    <a class="nav-item @(cur=="thongke"?"active":"")" asp-controller="QuanLy" asp-action="ThongKe">
+                        <div class="nav-dot" style="background:@(cur == "thongke" ? "#2dd4a6" : "#2dd4a633")"></div>Thống kê mượn
+                    </a>
+                    <a class="nav-item @(cur=="phieuphat"?"active":"")" asp-controller="QuanLy" asp-action="PhieuPhat">
+                        <div class="nav-dot" style="background:@(cur == "phieuphat" ? "#f5a623" : "#f5a62333")"></div>Phiếu phạt
+                        <span class="nav-badge">5</span>
+                    </a>
+
+                    <div class="nav-section">HỆ THỐNG</div>
+                    <a class="nav-item @(cur=="phanquyen"?"active":"")" asp-controller="QuanLy" asp-action="PhanQuyen">
+                        <div class="nav-dot" style="background:@(cur == "phanquyen" ? "#f06292" : "#f0629233")"></div>Phân quyền DB
+                    </a>
+                }
+                else if (role == "tt")
+                {
+                    <div class="nav-section">TỔNG QUAN</div>
+                    <a class="nav-item @(cur=="dashboard"?"active":"")" asp-controller="ThuThu" asp-action="Dashboard">
+                        <div class="nav-dot" style="background:@(cur == "dashboard" ? "#2dd4a6" : "#2dd4a633")"></div>Dashboard
+                    </a>
+
+                    <div class="nav-section">NGHIỆP VỤ</div>
+                    <a class="nav-item @(cur=="phieumuon"?"active":"")" asp-controller="ThuThu" asp-action="PhieuMuon">
+                        <div class="nav-dot" style="background:@(cur == "phieumuon" ? "#2dd4a6" : "#2dd4a633")"></div>Phiếu mượn
+                        <span class="nav-badge">18</span>
+                    </a>                   
+                    <a class="nav-item @(cur=="phieunhap"?"active":"")" asp-controller="ThuThu" asp-action="PhieuNhap">
+                        <div class="nav-dot" style="background:@(cur == "phieunhap" ? "#2dd4a6" : "#2dd4a633")"></div>Phiếu nhập
+                    </a>
+                    <a class="nav-item @(cur=="thethuvien"?"active":"")" asp-controller="ThuThu" asp-action="TheTV">
+                        <div class="nav-dot" style="background:@(cur == "thethuvien" ? "#2dd4a6" : "#2dd4a633")"></div>Thẻ thư viện
+                    </a>
+                    <a class="nav-item @(cur=="phieuphat"?"active":"")" asp-controller="ThuThu" asp-action="PhieuPhat">
+                        <div class="nav-dot" style="background:@(cur == "phieuphat" ? "#f5a623" : "#f5a62333")"></div>Phiếu phạt
+                        <span class="nav-badge">5</span>
+                    </a>
+
+                    <div class="nav-section">TRA CỨU</div>
+                    <a class="nav-item @(cur=="sach"?"active":"")" asp-controller="ThuThu" asp-action="Sach">
+                        <div class="nav-dot" style="background:@(cur == "sach" ? "#4d9ef7" : "#4d9ef733")"></div>Danh mục sách
+                    </a>
+                    <a class="nav-item @(cur=="cuonsach"?"active":"")" asp-controller="ThuThu" asp-action="CuonSach">
+                        <div class="nav-dot" style="background:@(cur == "cuonsach" ? "#4d9ef7" : "#4d9ef733")"></div>Cuốn sách
+                    </a>
+                }
+                else if (role == "dg")
+                {
+                    <div class="nav-section">THƯ VIỆN</div>
+                    <a class="nav-item @(cur=="dashboard"?"active":"")" asp-controller="DocGia" asp-action="Dashboard">
+                        <div class="nav-dot" style="background:@(cur == "dashboard" ? "#f06292" : "#f0629233")"></div>Trang chủ
+                    </a>
+                    <a class="nav-item @(cur=="sach"?"active":"")" asp-controller="DocGia" asp-action="TimSach">
+                        <div class="nav-dot" style="background:@(cur == "sach" ? "#4d9ef7" : "#4d9ef733")"></div>Tìm kiếm sách
+                    </a>
+                    <a class="nav-item @(cur=="theloai"?"active":"")" asp-controller="DocGia" asp-action="TheLoai">
+                        <div class="nav-dot" style="background:@(cur == "theloai" ? "#4d9ef7" : "#4d9ef733")"></div>Theo thể loại
+                    </a>
+                    <a class="nav-item @(cur=="tacgia"?"active":"")" asp-controller="DocGia" asp-action="TacGia">
+                        <div class="nav-dot" style="background:@(cur == "tacgia" ? "#4d9ef7" : "#4d9ef733")"></div>Theo tác giả
+                    </a>
+
+                    <div class="nav-section">TÀI KHOẢN</div>
+                    <a class="nav-item @(cur=="phieumuon"?"active":"")" asp-controller="DocGia" asp-action="SachDangMuon">
+                        <div class="nav-dot" style="background:@(cur == "phieumuon" ? "#f06292" : "#f0629233")"></div>Sách đang mượn
+                        <span class="nav-badge">2</span>
+                    </a>
+                    <a class="nav-item @(cur=="thethuvien"?"active":"")" asp-controller="DocGia" asp-action="TheTV">
+                        <div class="nav-dot" style="background:@(cur == "thethuvien" ? "#2dd4a6" : "#2dd4a633")"></div>Thẻ thư viện
+                    </a>
+                }
+            </nav>
+
+            <div class="s-user">
+                <div class="s-avatar @avCls">@avInit</div>
+                <div>
+                    <div class="s-uname">@fullName</div>
+                    <div class="s-urole">@tenRole</div>
+                </div>
+                <a asp-controller="Account" asp-action="Logout" class="logout-btn" title="Đăng xuất">↩</a>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-area">
+            <header class="topbar">
+                <div>
+                    <div class="page-title">@ViewData["Title"]</div>
+                    <span class="breadcrumb">/ @ViewData["Title"]</span>
+                </div>
+                <div class="tb-spacer"></div>
+                <div class="search-wrap">
+                    <span style="color:var(--txt-muted)">⌕</span>
+                    <input placeholder="Tìm kiếm nhanh...">
+                </div>
+                <span class="role-tag @tagCls">@tenRole</span>
+            </header>
+
+            <div class="page-content">
+                @RenderBody()
+            </div>
+        </div>
+
+    </div>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

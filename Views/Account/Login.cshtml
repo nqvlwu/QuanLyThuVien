@@ -1,0 +1,50 @@
+﻿@model LibraryOS.Models.LoginViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>LibraryOS — Đăng nhập</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+
+            <div class="l-logo">
+                <div class="l-logo-icon">📚</div>
+                <div>
+                    <div class="l-logo-name">LibraryOS</div>
+                    <div class="l-logo-sub">Quản lý thư viện · Oracle DB</div>
+                </div>
+            </div>
+
+            <div class="l-title">Đăng nhập</div>
+            <div class="l-sub">Nhập thông tin tài khoản để vào hệ thống</div>
+
+            @if (!string.IsNullOrEmpty(ViewBag.Error))
+            {
+                <div class="l-err">@ViewBag.Error</div>
+            }
+
+            <form asp-action="Login" method="post">
+                @Html.AntiForgeryToken()
+                <div class="fg">
+                    <label class="flbl">Tên đăng nhập</label>
+                    <input class="finp" asp-for="Username" placeholder="username..." />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+                <div class="fg">
+                    <label class="flbl">Mật khẩu</label>
+                    <input class="finp" asp-for="Password" type="password" placeholder="password..." />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn-login">Đăng nhập</button>
+            </form>         
+
+        </div>
+    </div>
+</body>
+</html>

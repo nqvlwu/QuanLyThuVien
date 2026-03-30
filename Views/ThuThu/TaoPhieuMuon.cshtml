@@ -1,0 +1,227 @@
+﻿@model LibraryOS.Models.TaoPhieuMuonVM
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"]      = "Tạo phiếu mượn";
+    ViewData["ActiveMenu"] = "phieumuon";
+}
+@using System.Security.Claims
+@{
+    var role = User.FindFirstValue("Role") ?? "";
+    var backController = role == "ql" ? "QuanLy" : "ThuThu";
+}
+<style>
+.form-card  { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:14px; }
+.form-body  { padding:20px 24px; }
+.form-row   { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group.full { grid-column:1/-1; }
+.flbl { font-size:10px; font-family:var(--mono); color:var(--txt-secondary); letter-spacing:.06em; text-transform:uppercase; }
+.finp {
+    padding:9px 12px; background:var(--bg-base); border:1px solid var(--border-md);
+    border-radius:var(--r-sm); color:var(--txt-primary); font-size:13px;
+    font-family:var(--font); outline:none; transition:border-color .15s;
+}
+.finp:focus { border-color:var(--accent-teal); box-shadow:0 0 0 3px rgba(45,212,166,0.1); }
+.finp::placeholder { color:var(--txt-muted); }
+.the-info {
+    display:flex; align-items:center; gap:10px; margin-top:6px;
+    padding:8px 12px; border-radius:var(--r-sm);
+    font-size:12px; font-family:var(--mono);
+}
+.the-ok  { background:rgba(45,212,166,0.08); border:1px solid rgba(45,212,166,0.2); color:var(--accent-teal); }
+.the-err { background:rgba(240,98,146,0.08); border:1px solid rgba(240,98,146,0.2); color:var(--accent-rose); }
+
+/* Bảng chọn sách */
+.sach-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:14px; max-height:400px; overflow-y:auto; }
+.sach-item {
+    border:1px solid var(--border); border-radius:var(--r-md);
+    padding:12px; cursor:pointer; transition:all .15s; position:relative;
+    background:var(--bg-raised);
+}
+.sach-item:hover { border-color:var(--accent-teal); }
+.sach-item.selected { border-color:var(--accent-teal); background:rgba(45,212,166,0.06); }
+.sach-item input[type=checkbox] { display:none; }
+.sach-check {
+    position:absolute; top:10px; right:10px;
+    width:18px; height:18px; border-radius:4px;
+    border:1.5px solid var(--border-md);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; transition:all .15s;
+}
+.sach-item.selected .sach-check { background:var(--accent-teal); border-color:var(--accent-teal); color:#0d1a14; }
+.sach-ma   { font-size:9px; font-family:var(--mono); color:var(--txt-muted); margin-bottom:5px; }
+.sach-ten  { font-size:12px; font-weight:500; line-height:1.4; margin-bottom:3px; padding-right:24px; }
+.sach-tg   { font-size:10px; font-family:var(--mono); color:var(--txt-secondary); margin-bottom:6px; }
+.sach-tl   { font-size:10px; }
+
+/* Alert */
+.alert { padding:10px 16px; border-radius:var(--r-sm); font-size:13px; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+.alert-ok  { background:rgba(45,212,166,0.08); border:1px solid rgba(45,212,166,0.2); color:var(--accent-teal); }
+.alert-err { background:rgba(240,98,146,0.08); border:1px solid rgba(240,98,146,0.2); color:var(--accent-rose); }
+
+/* Counter */
+.counter { font-size:11px; font-family:var(--mono); color:var(--txt-muted); padding:8px 14px; border-bottom:1px solid var(--border); }
+.counter span { color:var(--accent-teal); font-weight:500; }
+</style>
+
+@* Alert kết quả *@
+@if (!string.IsNullOrEmpty(Model.ThongBao))
+{
+    <div class="alert @(Model.ThanhCong ? "alert-ok" : "alert-err")">
+        @(Model.ThanhCong ? "✓" : "✗") @Model.ThongBao
+    </div>
+}
+
+<form method="post" asp-action="TaoPhieuMuon">
+    @Html.AntiForgeryToken()
+
+    @* ── Thông tin phiếu ── *@
+    <div class="form-card">
+        <div class="ph">
+            <div><div class="pt">Thông tin phiếu mượn</div></div>
+        </div>
+        <div class="form-body">
+            <div class="form-row">
+
+                @* Số thẻ TV *@
+                <div class="form-group">
+                    <label class="flbl">Số thẻ thư viện *</label>
+                    <input class="finp" id="soTheTV" name="SoTheTV"
+                           value="@Model.SoTheTV"
+                           placeholder="VD: TV00412"
+                           oninput="kiemTraThe(this.value)"/>
+                    <div id="the-info" class="the-info" style="display:none">
+                        <span class="the-icon"></span>
+                        <span id="ten-dg"></span>
+                    </div>
+                </div>
+
+                @* Ngày mượn *@
+                <div class="form-group">
+                    <label class="flbl">Ngày mượn</label>
+                    <input class="finp" type="date" name="NgayMuon" value="@Model.NgayMuon"/>
+                </div>
+
+                @* Ngày trả dự kiến *@
+                <div class="form-group">
+                    <label class="flbl">Ngày trả dự kiến</label>
+                    <input class="finp" type="date" name="NgayTra" value="@Model.NgayTra"/>
+                </div>
+
+                @* Ghi chú *@
+                <div class="form-group">
+                    <label class="flbl">Ghi chú</label>
+                    <input class="finp" name="GhiChu" value="@Model.GhiChu" placeholder="Không bắt buộc"/>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Chọn cuốn sách ── *@
+    <div class="form-card">
+        <div class="ph">
+            <div>
+                <div class="pt">Chọn cuốn sách</div>
+                <div class="ps">Tối đa 5 cuốn mỗi phiếu</div>
+            </div>
+            <div id="counter-badge" class="role-tag tag-tt">
+                Đã chọn: <span id="so-chon">@Model.DanhSachCuonSach.Count</span> cuốn
+            </div>
+        </div>
+
+        @* Tìm kiếm nhanh *@
+        <div class="tsearch">
+            <input type="text" id="search-sach" placeholder="Tìm tên sách, mã cuốn..." oninput="locSach(this.value)">
+        </div>
+
+        <div class="sach-grid" id="sach-grid">
+            @foreach (var cs in Model.DanhSachSach)
+            {
+                var isSelected = Model.DanhSachCuonSach.Contains(cs.MaCuonSach);
+                <label class="sach-item @(isSelected ? "selected" : "")"
+                       data-ten="@cs.TenSach.ToLower()"
+                       data-ma="@cs.MaCuonSach.ToLower()"
+                       onclick="toggleChon(this)">
+                    <input type="checkbox"
+                           name="DanhSachCuonSach"
+                           value="@cs.MaCuonSach"
+                           @(isSelected ? "checked" : "")/>
+                    <div class="sach-check">@(isSelected ? "✓" : "")</div>
+                    <div class="sach-ma">@cs.MaCuonSach — @cs.MaSach</div>
+                    <div class="sach-ten">@cs.TenSach</div>
+                    <div class="sach-tg">@cs.TacGia</div>
+                    <span class="pill p-teal sach-tl">@cs.TheLoai</span>
+                </label>
+            }
+        </div>
+
+        @if (!Model.DanhSachSach.Any())
+        {
+            <div class="empty"><div class="empty-icon">📭</div>Không có cuốn sách nào trong kho</div>
+        }
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end">
+    <a asp-controller="@backController" asp-action="PhieuMuon" class="btn b-ghost">← Quay lại</a>
+    <button type="submit" class="btn b-teal">✓ Tạo phiếu mượn</button>
+    </div>
+
+</form>
+
+@section Scripts {
+<script>
+let soChon = @Model.DanhSachCuonSach.Count;
+
+// Toggle chọn cuốn sách
+function toggleChon(label) {
+    const cb = label.querySelector('input[type=checkbox]');
+    const check = label.querySelector('.sach-check');
+
+    if (!cb.checked) {
+        if (soChon >= 5) {
+            alert('Chỉ được chọn tối đa 5 cuốn!');
+            return;
+        }
+        cb.checked = true;
+        label.classList.add('selected');
+        check.textContent = '✓';
+        soChon++;
+    } else {
+        cb.checked = false;
+        label.classList.remove('selected');
+        check.textContent = '';
+        soChon--;
+    }
+
+    document.getElementById('so-chon').textContent = soChon;
+}
+
+// Kiểm tra thẻ realtime (debounce 500ms)
+let timeout;
+function kiemTraThe(soTheTV) {
+    const info = document.getElementById('the-info');
+    const tenDG = document.getElementById('ten-dg');
+    if (!soTheTV || soTheTV.length < 5) { info.style.display = 'none'; return; }
+
+    clearTimeout(timeout);
+    timeout = setTimeout(async () => {
+        const res  = await fetch(`/ThuThu/KiemTraThe?soTheTV=${soTheTV}`);
+        const data = await res.json();
+
+        info.style.display = 'flex';
+        info.className     = `the-info ${data.hopLe ? 'the-ok' : 'the-err'}`;
+        tenDG.textContent  = data.hoTen;
+        info.querySelector('.the-icon').textContent = data.hopLe ? '✓' : '✗';
+    }, 500);
+}
+
+// Lọc sách theo từ khóa
+function locSach(keyword) {
+    const kw = keyword.toLowerCase();
+    document.querySelectorAll('.sach-item').forEach(item => {
+        const match = item.dataset.ten.includes(kw) || item.dataset.ma.includes(kw);
+        item.style.display = match ? '' : 'none';
+    });
+}
+</script>
+}

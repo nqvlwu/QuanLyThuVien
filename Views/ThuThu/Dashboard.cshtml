@@ -1,0 +1,97 @@
+﻿@model LibraryOS.Models.ThuThuDashboardVM
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard";
+    ViewData["ActiveMenu"] = "dashboard";
+}
+
+<div class="stats-grid">
+    <div class="stat-card" style="--c:#2dd4a6;--g:rgba(45,212,166,0.09)">
+        <div class="stat-icon">📋</div>
+        <div class="stat-val">@Model.MuonHomNay</div>
+        <div class="stat-lbl">Mượn hôm nay</div>
+    </div>
+    <div class="stat-card" style="--c:#4d9ef7;--g:rgba(77,158,247,0.1)">
+        <div class="stat-icon">↩</div>
+        <div class="stat-val">@Model.TraHomNay</div>
+        <div class="stat-lbl">Trả hôm nay</div>
+    </div>
+    <div class="stat-card" style="--c:#f06292;--g:rgba(240,98,146,0.09)">
+        <div class="stat-icon">⚠</div>
+        <div class="stat-val">@Model.QuaHan</div>
+        <div class="stat-lbl">Quá hạn</div>
+        @if (Model.QuaHan > 0)
+        {
+            <div class="stat-delta dn">↓ Cần xử lý ngay</div>
+        }
+    </div>
+    <div class="stat-card" style="--c:#f5a623;--g:rgba(245,166,35,0.09)">
+        <div class="stat-icon">💰</div>
+        <div class="stat-val">@Model.PhatChoThu</div>
+        <div class="stat-lbl">Phạt chờ thu</div>
+    </div>
+</div>
+
+<div class="panel full">
+    <div class="ph">
+        <div><div class="pt">Phiếu mượn cần xử lý</div></div>
+        <a asp-action="TaoPhieuMuon" class="btn b-teal btn-sm">+ Tạo phiếu mượn</a>
+    </div>
+    @if (!Model.PhieuCanXuLy.Any())
+    {
+        <div class="empty"><div class="empty-icon">✅</div>Không có phiếu cần xử lý</div>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Mã PM</th><th>Thẻ TV</th><th>Độc giả</th><th>Số cuốn</th><th>Ngày mượn</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+            <tbody>
+                @foreach (var pm in Model.PhieuCanXuLy)
+                {
+                    <tr>
+                        <td class="mo">@pm.MaPM</td>
+                        <td class="mo">@pm.SoTheTV</td>
+                        <td>@pm.HoTenDG</td>
+                        <td>@pm.SoCuon</td>
+                        <td class="mo" style="@(pm.IsQuaHan ? "color:#f06292" : "")">@pm.NgayMuon</td>
+                        <td>
+                            <span class="pill @(pm.IsQuaHan ? "p-rose" : "p-blue")">@pm.TinhTrang</span>
+                        </td>
+                        <td>
+                            @if (pm.IsQuaHan)
+                            {
+                                <button class="btn b-ghost btn-sm">Lập phạt</button>
+                            }
+                            else
+                            {
+
+                                <button class="btn b-ghost btn-sm">Xác nhận trả</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="panel full">
+    <div class="ph">
+        <div><div class="pt">Phiếu nhập gần đây</div></div>
+        <a asp-action="PhieuNhap" class="btn b-ghost btn-sm">Xem tất cả →</a>
+    </div>
+    <table>
+        <thead><tr><th>Mã PN</th><th>Ngày nhập</th><th>Nhân viên</th><th>Số cuốn</th></tr></thead>
+        <tbody>
+            @foreach (var pn in Model.PhieuNhapGanDay)
+            {
+                <tr>
+                    <td class="mo">@pn.MaPN</td>
+                    <td class="mo">@pn.NgayNhap</td>
+                    <td>@pn.NhanVien</td>
+                    <td>@pn.SoCuon</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,97 @@
+﻿@model List<LibraryOS.Models.PhieuMuonRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"]      = "Phiếu mượn";
+    ViewData["ActiveMenu"] = "phieumuon";
+    var tinhTrang = ViewBag.TinhTrang as string ?? "";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh sách phiếu mượn</div>
+            <div class="ps">Tổng: @Model.Count phiếu</div>
+        </div>
+        <a asp-action="TaoPhieuMuon" class="btn b-teal btn-sm">+ Tạo phiếu mượn</a>
+    </div>
+    <div class="tsearch">
+        <input id="search-input" placeholder="Tìm mã PM, tên độc giả, số thẻ..." oninput="locBang(this.value)">
+        <select onchange="window.location.href='/ThuThu/PhieuMuon?tinhTrang='+this.value">
+            <option value="">Tất cả trạng thái</option>
+            <option value="Đang mượn">Đang mượn</option>
+            <option value="Đã trả">Đã trả</option>
+            <option value="Quá hạn">Quá hạn</option>
+        </select>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty">
+            <div class="empty-icon">📭</div>
+            Không có phiếu mượn nào
+        </div>
+    }
+    else
+    {
+        <table id="bang-phieu">
+            <thead>
+                <tr>
+                    <th>Mã PM</th>
+                    <th>Thẻ TV</th>
+                    <th>Độc giả</th>
+                    <th>NV lập</th>
+                    <th>Ngày mượn</th>
+                    <th>Số cuốn</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var pm in Model)
+                {
+                    var pillCls = pm.TinhTrang switch {
+                        "Đang mượn" => "p-blue",
+                        "Đã trả"    => "p-teal",
+                        "Quá hạn"   => "p-rose",
+                        _           => "p-muted"
+                    };
+                    <tr>
+                        <td class="mo">@pm.MaPM</td>
+                        <td class="mo">@pm.SoTheTV</td>
+                        <td>@pm.HoTenDG</td>
+                        <td style="color:var(--txt-secondary);font-size:11px">@pm.TenNV</td>
+                        <td class="mo">@pm.NgayMuon</td>
+                        <td style="font-family:var(--mono)">@pm.SoCuon cuốn</td>
+                        <td><span class="pill @pillCls">@pm.TinhTrang</span></td>
+                        <td>
+                            @if (pm.TinhTrang == "Đang mượn")
+                            {
+                                <button class="btn b-ghost btn-sm">Xác nhận trả</button>
+                            }
+                            else if (pm.TinhTrang == "Quá hạn")
+                            {
+                                <button class="btn b-ghost btn-sm" style="color:#f5a623;border-color:#f5a62333">Lập phạt</button>
+                            }
+                            else
+                            {
+                                <span style="color:var(--txt-muted);font-size:11px">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {
+<script>
+function locBang(kw) {
+    kw = kw.toLowerCase();
+    document.querySelectorAll('#bang-phieu tbody tr').forEach(tr => {
+        const text = tr.innerText.toLowerCase();
+        tr.style.display = text.includes(kw) ? '' : 'none';
+    });
+}
+</script>
+}
