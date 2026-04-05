@@ -1,0 +1,127 @@
+﻿@model List<LibraryOS.Models.NhanVienRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Nhân viên";
+    ViewData["ActiveMenu"] = "nhanvien";
+    var kw = ViewBag.Keyword as string ?? "";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh sách nhân viên</div>
+            <div class="ps">Tổng: @Model.Count nhân viên</div>
+        </div>
+        <button class="btn b-blue btn-sm" onclick="moModal()">+ Thêm nhân viên</button>
+    </div>
+    <form method="get" asp-action="NhanVien">
+        <div class="tsearch">
+            <input name="kw" value="@kw" placeholder="Tìm mã NV, họ tên, SĐT...">
+            <button type="submit" class="btn b-ghost btn-sm">Tìm</button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">👤</div>Không tìm thấy nhân viên nào</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Họ tên</th>
+                    <th>Giới tính</th>
+                    <th>SĐT</th>
+                    <th>Email</th>
+                    <th>Ngày vào làm</th>
+                    <th>Vai trò</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var nv in Model)
+                {
+                    <tr>
+                        <td class="mo" style="color:#a78bfa">@nv.MaNV</td>
+                        <td style="font-weight:500">@nv.HoTenNV</td>
+                        <td>@nv.GioiTinh</td>
+                        <td class="mo">@nv.SdtNV</td>
+                        <td style="font-size:12px;color:var(--accent-blue)">@nv.EmailNV</td>
+                        <td class="mo">@nv.NgayVaoLam</td>
+                        <td>
+                            <span class="pill @(nv.VaiTro == "Quản lý" ? "p-blue" : "p-teal")">
+                                @nv.VaiTro
+                            </span>
+                        </td>
+                        <td><button class="btn b-ghost btn-sm">Sửa</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:520px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Thêm nhân viên</div>
+            <button onclick="dongModal()" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Mã nhân viên</label>
+                    <input class="finp" placeholder="VD: NV004">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Họ tên</label>
+                    <input class="finp" placeholder="Họ và tên đầy đủ">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Giới tính</label>
+                    <select class="finp"><option>Nam</option><option>Nữ</option></select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Ngày sinh</label>
+                    <input class="finp" type="date">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Số điện thoại</label>
+                    <input class="finp" placeholder="09xxxxxxxx">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Email</label>
+                    <input class="finp" placeholder="email@thuvien.vn">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+                    <label class="flbl">Địa chỉ</label>
+                    <input class="finp" placeholder="Địa chỉ">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Ngày vào làm</label>
+                    <input class="finp" type="date">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Vai trò</label>
+                    <select class="finp">
+                        <option value="1">Quản lý</option>
+                        <option value="2">Thủ thư</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                <button onclick="dongModal()" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function moModal()  { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function dongModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+    </script>
+}

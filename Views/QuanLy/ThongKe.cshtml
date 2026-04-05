@@ -1,0 +1,111 @@
+﻿@model List<LibraryOS.Models.BaoCaoSachMuonRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Thống kê mượn";
+    ViewData["ActiveMenu"] = "thongke";
+    var topSach = Model.FirstOrDefault();
+}
+
+@* Highlight top 1 *@
+@if (topSach != null)
+{
+    <div class="welcome-card" style="margin-bottom:16px">
+        <div>
+            <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted);margin-bottom:6px">SÁCH MƯỢN NHIỀU NHẤT</div>
+            <div style="font-size:20px;font-weight:600">@topSach.TenSach</div>
+            <div style="font-size:12px;color:var(--txt-secondary);margin-top:4px">@topSach.TacGia · @topSach.TenNXB</div>
+            <div style="margin-top:8px">
+                <span class="pill p-teal">@topSach.TheLoai</span>
+            </div>
+        </div>
+        <div style="text-align:right">
+            <div style="font-size:10px;color:var(--txt-muted);font-family:var(--mono);margin-bottom:4px">TỔNG LƯỢT MƯỢN</div>
+            <div style="font-size:44px;font-weight:600;color:#2dd4a6;font-family:var(--mono);line-height:1">@topSach.TongLuotMuon</div>
+            <div style="font-size:11px;color:var(--txt-secondary)">lượt</div>
+        </div>
+    </div>
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Báo cáo sách được mượn nhiều</div>
+            <div class="ps">V_BAOCAO_SACHMUON · xếp theo lượt mượn giảm dần</div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Tên sách</th>
+                <th>Tác giả</th>
+                <th>Thể loại</th>
+                <th>NXB</th>
+                <th>Tổng lượt</th>
+                <th>Đang mượn</th>
+                <th>Đã trả</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int stt = 1;
+            }
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td>
+                        @if (stt == 1)
+                        {
+                            <span style="color:#f5a623;font-family:var(--mono);font-weight:600">🥇 1</span>
+                        }
+                        else if (stt == 2)
+                        {
+                            <span style="color:var(--txt-secondary);font-family:var(--mono)">🥈 2</span>
+                        }
+                        else if (stt == 3)
+                        {
+                            <span style="color:#f5a623;font-family:var(--mono)">🥉 3</span>
+                        }
+                        else
+                        {
+                            <span class="mo">@stt</span>
+                        }
+                    </td>
+                    <td>
+                        <div style="font-weight:500">@s.TenSach</div>
+                        <div style="font-size:10px;color:var(--txt-muted);font-family:var(--mono)">@s.MaSach</div>
+                    </td>
+                    <td style="font-size:12px;color:var(--txt-secondary)">@s.TacGia</td>
+                    <td><span class="pill p-teal">@s.TheLoai</span></td>
+                    <td style="font-size:11px;color:var(--txt-secondary)">@s.TenNXB</td>
+                    <td>
+                        <span style="font-size:18px;font-weight:600;font-family:var(--mono);color:@(s.TongLuotMuon > 0 ? "var(--accent-teal)" : "var(--txt-muted)")">
+                            @s.TongLuotMuon
+                        </span>
+                    </td>
+                    <td>
+                        @if (s.DangMuon > 0)
+                        {
+                            <span class="pill p-blue">@s.DangMuon cuốn</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--txt-muted);font-size:11px">—</span>
+                        }
+                    </td>
+                    <td>
+                        @if (s.DaTra > 0)
+                        {
+                            <span class="pill p-teal">@s.DaTra lượt</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--txt-muted);font-size:11px">—</span>
+                        }
+                    </td>
+                </tr>
+                stt++;
+            }
+        </tbody>
+    </table>
+</div>

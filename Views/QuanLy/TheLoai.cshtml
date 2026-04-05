@@ -1,0 +1,80 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Thể loại";
+    ViewData["ActiveMenu"] = "theloai";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div><div class="pt">Danh sách thể loại</div><div class="ps">THELOAI table</div></div>
+        <button class="btn b-blue btn-sm" onclick="moModal()">+ Thêm thể loại</button>
+    </div>
+    <div class="tsearch">
+        <input placeholder="Tìm tên thể loại..." oninput="loc(this.value)">
+    </div>
+    <table id="bang">
+        <thead>
+            <tr><th>Mã TL</th><th>Tên thể loại</th><th>Số sách</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var tl in new[] {
+                        new { Ma="TL001", Ten="Công nghệ thông tin", SoSach=7,  Mau="p-blue"   },
+                        new { Ma="TL002", Ten="Toán học",            SoSach=2,  Mau="p-purple" },
+                        new { Ma="TL003", Ten="Văn học Việt Nam",    SoSach=3,  Mau="p-teal"   },
+                        new { Ma="TL004", Ten="Văn học nước ngoài",  SoSach=0,  Mau="p-teal"   },
+                        new { Ma="TL005", Ten="Khoa học tự nhiên",   SoSach=0,  Mau="p-amber"  },
+                        new { Ma="TL006", Ten="Kinh tế",             SoSach=0,  Mau="p-amber"  },
+                        new { Ma="TL007", Ten="Lịch sử",             SoSach=0,  Mau="p-muted"  },
+                        new { Ma="TL008", Ten="Trí tuệ nhân tạo",    SoSach=2,  Mau="p-rose"   },
+                        })
+            {
+                <tr>
+                    <td class="mo" style="color:#a78bfa">@tl.Ma</td>
+                    <td style="font-weight:500">@tl.Ten</td>
+                    <td>
+                        <span class="pill @tl.Mau">@tl.SoSach đầu sách</span>
+                    </td>
+                    <td style="display:flex;gap:6px">
+                        <button class="btn b-ghost btn-sm">Sửa</button>
+                        <button class="btn b-ghost btn-sm" style="color:#f06292">Xóa</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:380px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Thêm thể loại</div>
+            <button onclick="dongModal()" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã thể loại</label>
+                <input class="finp" placeholder="VD: TL009">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Tên thể loại</label>
+                <input class="finp" placeholder="VD: Tâm lý học">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+                <button onclick="dongModal()" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loc(kw) {
+            kw = kw.toLowerCase();
+            document.querySelectorAll('#bang tbody tr').forEach(tr =>
+                tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none');
+        }
+        function moModal()  { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function dongModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+    </script>
+}
