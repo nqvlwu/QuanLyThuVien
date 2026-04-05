@@ -1,0 +1,318 @@
+﻿@model List<LibraryOS.Models.SachRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"]      = "Sách & Kho";
+    ViewData["ActiveMenu"] = "sach";
+    var kw        = ViewBag.Keyword as string ?? "";
+    var maTL      = ViewBag.MaTL    as string ?? "";
+    var dsTheLoai = ViewBag.DsTheLoai as List<LibraryOS.Models.TheLoaiRow> ?? new();
+    var tongCuon  = Model.Sum(s => s.TongCuon);
+    var conLai    = Model.Sum(s => s.ConLai);
+    var dangMuon  = tongCuon - conLai;
+}
+
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="stat-card" style="--c:#4d9ef7;--g:rgba(77,158,247,0.1)">
+        <div class="stat-icon">📚</div>
+        <div class="stat-val">@Model.Count</div>
+        <div class="stat-lbl">Đầu sách</div>
+    </div>
+    <div class="stat-card" style="--c:#2dd4a6;--g:rgba(45,212,166,0.09)">
+        <div class="stat-icon">📦</div>
+        <div class="stat-val">@tongCuon</div>
+        <div class="stat-lbl">Tổng cuốn</div>
+    </div>
+    <div class="stat-card" style="--c:#f06292;--g:rgba(240,98,146,0.09)">
+        <div class="stat-icon">📖</div>
+        <div class="stat-val">@dangMuon</div>
+        <div class="stat-lbl">Đang được mượn</div>
+    </div>
+</div>
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh mục sách</div>
+            <div class="ps">SACH · CUONSACH · @Model.Count đầu sách</div>
+        </div>
+        <button class="btn b-blue btn-sm" onclick="moModal()">+ Thêm sách</button>
+    </div>
+    <form method="get" asp-action="Sach">
+        <div class="tsearch">
+            <input name="kw" value="@kw" placeholder="Tìm tên sách, mã sách...">
+            <select name="maTL" onchange="this.form.submit()">
+                <option value="">Tất cả thể loại</option>
+                @foreach (var tl in dsTheLoai)
+                {
+                    if (maTL == tl.MaTL)
+                    {
+                        <option value="@tl.MaTL" selected>@tl.TenTL</option>
+                    }
+                    else
+                    {
+                        <option value="@tl.MaTL">@tl.TenTL</option>
+                    }
+                }
+            </select>
+            <button type="submit" class="btn b-ghost btn-sm">Tìm</button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">📭</div>Không tìm thấy sách nào</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:80px">Mã sách</th>
+                    <th>Tên sách</th>
+                    <th>Tác giả</th>
+                    <th>NXB</th>
+                    <th style="width:60px">Năm</th>
+                    <th style="width:90px">Giá</th>
+                    <th style="width:40px">Tổng cuốn</th>
+                    <th style="width:120px">Còn lại</th>
+                    <th style="width:160px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td class="mo" style="color:#a78bfa">@s.MaSach</td>
+                        <td>
+                            <div style="font-weight:500">@s.TenSach</div>
+                            <div style="font-size:10px;color:var(--txt-muted);font-family:var(--mono)">@s.TheLoai</div>
+                        </td>
+                        <td style="font-size:12px;color:var(--txt-secondary)">@s.TacGia</td>
+                        <td style="font-size:11px;color:var(--txt-secondary)">@s.TenNXB</td>
+                        <td class="mo">@s.NamXB</td>
+                        <td class="mo">@s.GiaSach.ToString("N0")đ</td>
+                        <td class="mo">@s.TongCuon</td>
+                        <td>
+                            <span class="pill @(s.ConLai == 0 ? "p-rose" : s.ConLai <= 1 ? "p-amber" : "p-teal")">
+                                @s.ConLai cuốn
+                            </span>
+                        </td>
+                        <td style="white-space:nowrap">                          
+                            <button class="btn b-ghost btn-sm"
+                                    style="margin-left:4px"
+                                    title="Sửa sách">
+                                Sửa
+                            </button>
+                            <button class="btn b-ghost btn-sm"
+                                    style="color:#f06292;margin-left:4px"
+                                    onclick="xoaSach('@s.MaSach', '@s.TenSach')"
+                                    title="Xóa sách">
+                                Xóa
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:540px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Thêm sách mới</div>
+            <button onclick="dongModal()" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Mã sách</label>
+                    <input class="finp" placeholder="VD: S013">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Năm xuất bản</label>
+                    <input class="finp" type="number" placeholder="2024">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+                    <label class="flbl">Tên sách</label>
+                    <input class="finp" placeholder="Tên đầy đủ của sách">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Nhà xuất bản</label>
+                    <select class="finp">
+                        @foreach (var nxb in (ViewBag.DsNXB as List<LibraryOS.Models.NhaXuatBanRow> ?? new()))
+                        {
+                            <option value="@nxb.MaNXB">@nxb.TenNXB</option>
+                        }
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Giá sách (đ)</label>
+                    <input class="finp" type="number" placeholder="100000">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Thể loại</label>
+                    <select class="finp">
+                        @foreach (var tl in dsTheLoai)
+                        {
+                            <option value="@tl.MaTL">@tl.TenTL</option>
+                        }
+                    </select>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                    <label class="flbl">Số cuốn nhập</label>
+                    <input class="finp" type="number" placeholder="1" min="1">
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+                <button onclick="dongModal()" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal quản lý tác giả của sách -->
+<div id="modal-tacgia" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:500px;overflow:hidden">
+        <div class="ph">
+            <div>
+                <div class="pt" id="tg-modal-title">Tác giả của sách</div>
+                <div class="ps" id="tg-modal-sub"></div>
+            </div>
+            <button onclick="dongModalTacGia()" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+
+        <!-- Danh sách tác giả hiện tại -->
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border)">
+            <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+                Tác giả hiện tại
+            </div>
+            <div id="ds-tacgia-hientai" style="display:flex;flex-wrap:wrap;gap:8px;min-height:32px">
+                <!-- Render bằng JS -->
+            </div>
+        </div>
+
+        <!-- Thêm tác giả mới -->
+        <div style="padding:14px 18px">
+            <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+                Thêm tác giả
+            </div>
+            <div style="display:flex;gap:8px">
+                <select id="sel-tacgia" class="finp" style="flex:1">
+                    <!-- Render bằng JS -->
+                </select>
+                <button class="btn b-teal" onclick="themTacGia()">+ Thêm</button>
+            </div>
+            <div id="tg-thongbao" style="font-size:12px;margin-top:8px;display:none"></div>
+        </div>
+
+        <div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+            <button onclick="dongModalTacGia()" class="btn b-ghost">Đóng</button>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        // ── Xóa sách ────────────────────────────────────
+        async function xoaSach(maSach, tenSach) {
+            if (!confirm(`Xóa sách "${tenSach}"?\nThao tác này không thể hoàn tác!`)) return;
+            const res  = await fetch('/QuanLy/XoaSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maSach=${encodeURIComponent(maSach)}`
+            });
+            const data = await res.json();
+            alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
+            if (data.ok) window.location.reload();
+        }
+
+        // ── Modal sách ───────────────────────────────────
+        function moModal()  { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function dongModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
+
+        // ── Modal tác giả ────────────────────────────────
+        let currentMaSach = '';
+
+        async function moModalTacGia(maSach, tenSach) {
+            currentMaSach = maSach;
+            document.getElementById('tg-modal-title').textContent = 'Tác giả của sách';
+            document.getElementById('tg-modal-sub').textContent   = tenSach;
+            document.getElementById('tg-thongbao').style.display  = 'none';
+            document.getElementById('modal-tacgia').style.display = 'flex';
+            await loadTacGia();
+        }
+
+        function dongModalTacGia() {
+            document.getElementById('modal-tacgia').style.display = 'none';
+        }
+
+        async function loadTacGia() {
+            const res  = await fetch(`/QuanLy/GetTacGiaCuaSach?maSach=${currentMaSach}`);
+            const data = await res.json();
+
+            // Render tác giả hiện tại
+            const container = document.getElementById('ds-tacgia-hientai');
+            if (data.tacGiaCuaSach.length === 0) {
+                container.innerHTML = '<span style="color:var(--txt-muted);font-size:12px">Chưa có tác giả</span>';
+            } else {
+                container.innerHTML = data.tacGiaCuaSach.map(tg => `
+                    <div style="display:inline-flex;align-items:center;gap:6px;
+                                background:var(--bg-raised);border:1px solid var(--border-md);
+                                border-radius:20px;padding:4px 10px 4px 12px;font-size:12px">
+                        <span>${tg.hoTenTG}</span>
+                        <button onclick="xoaTacGia('${tg.maTG}')"
+                                style="background:none;border:none;color:var(--txt-muted);
+                                       cursor:pointer;font-size:14px;line-height:1;padding:0"
+                                title="Xóa tác giả này">×</button>
+                    </div>`).join('');
+            }
+
+            // Render dropdown thêm tác giả
+            const sel = document.getElementById('sel-tacgia');
+            const daCoMaTG = data.tacGiaCuaSach.map(t => t.maTG);
+            const chuaCo   = data.tatCaTacGia.filter(t => !daCoMaTG.includes(t.maTG));
+            if (chuaCo.length === 0) {
+                sel.innerHTML = '<option value="">-- Đã liên kết tất cả --</option>';
+            } else {
+                sel.innerHTML = chuaCo.map(t =>
+                    `<option value="${t.maTG}">${t.maTG} — ${t.hoTenTG}</option>`
+                ).join('');
+            }
+        }
+
+        async function xoaTacGia(maTG) {
+            const res  = await fetch('/QuanLy/XoaTacGiaKhoiSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maTG=${encodeURIComponent(maTG)}&maSach=${encodeURIComponent(currentMaSach)}`
+            });
+            const data = await res.json();
+
+            const tb = document.getElementById('tg-thongbao');
+            tb.style.display = 'block';
+            tb.style.color   = data.ok ? 'var(--accent-teal)' : 'var(--accent-rose)';
+            tb.textContent   = (data.ok ? '✅ ' : '❌ ') + data.msg;
+
+            if (data.ok) await loadTacGia();
+        }
+
+        async function themTacGia() {
+            const maTG = document.getElementById('sel-tacgia').value;
+            if (!maTG) return;
+
+            const res  = await fetch('/QuanLy/ThemTacGiaVaoSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maTG=${encodeURIComponent(maTG)}&maSach=${encodeURIComponent(currentMaSach)}`
+            });
+            const data = await res.json();
+
+            const tb = document.getElementById('tg-thongbao');
+            tb.style.display = 'block';
+            tb.style.color   = data.ok ? 'var(--accent-teal)' : 'var(--accent-rose)';
+            tb.textContent   = (data.ok ? '✅ ' : '❌ ') + data.msg;
+
+            if (data.ok) await loadTacGia();
+        }
+    </script>
+}

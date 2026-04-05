@@ -47,6 +47,7 @@
         public bool IsQuaHan { get; set; }
     }
 
+    // Thêm vào DashboardViewmodel.cs
     public class NhanVienRow
     {
         public string MaNV { get; set; } = "";
@@ -54,6 +55,8 @@
         public string GioiTinh { get; set; } = "";
         public string SdtNV { get; set; } = "";
         public string EmailNV { get; set; } = "";
+        public string DiaChiNV { get; set; } = "";
+        public string NgaySinh { get; set; } = "";
         public string NgayVaoLam { get; set; } = "";
         public string VaiTro { get; set; } = "";
     }

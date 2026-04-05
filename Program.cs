@@ -7,6 +7,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<AuthService>();   
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<PhieuMuonService>();
+builder.Services.AddScoped<QuanLyService>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {

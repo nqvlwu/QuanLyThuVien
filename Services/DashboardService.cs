@@ -15,6 +15,7 @@ namespace LibraryOS.Services
         // ════════════════════════════════════════════
         // QUẢN LÝ
         // ════════════════════════════════════════════
+        // Thêm vào DashboardViewmodel.cs
         public QuanLyDashboardVM GetQuanLyDashboard()
         {
             var vm = new QuanLyDashboardVM();

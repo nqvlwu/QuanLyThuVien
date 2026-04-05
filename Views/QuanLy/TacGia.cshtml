@@ -1,0 +1,208 @@
+﻿@model List<LibraryOS.Models.TacGiaRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tác giả";
+    ViewData["ActiveMenu"] = "tacgia";
+    var kw = ViewBag.Keyword as string ?? "";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh sách tác giả</div>
+            <div class="ps">TACGIA table · @Model.Count tác giả</div>
+        </div>
+        <button class="btn b-blue btn-sm" onclick="moModalThem()">+ Thêm tác giả</button>
+    </div>
+
+    <form method="get" asp-action="TacGia">
+        <div class="tsearch">
+            <input name="kw" value="@kw" placeholder="Tìm tên tác giả...">
+            <button type="submit" class="btn b-ghost btn-sm">Tìm</button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">✍️</div>Không tìm thấy tác giả nào</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã TG</th>
+                    <th>Họ tên tác giả</th>
+                    <th>Số đầu sách</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td class="mo" style="color:#a78bfa">@t.MaTG</td>
+                        <td style="font-weight:500">@t.HoTenTG</td>
+                        <td>
+                            @if (t.SoSach > 0)
+                            {
+                                <span class="pill p-blue">@t.SoSach đầu sách</span>
+                            }
+                            else
+                            {
+                                <span class="pill p-muted">Chưa có sách</span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap">
+                            <button class="btn b-ghost btn-sm"
+                                    onclick="moModalSua('@t.MaTG', '@t.HoTenTG')">
+                                Sửa
+                            </button>
+                            <button class="btn b-ghost btn-sm"
+                                    style="color:#f06292;margin-left:4px"
+                                    onclick="xoaTacGia('@t.MaTG', '@t.HoTenTG')">
+                                Xóa
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- Modal thêm -->
+<div id="modal-them" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:400px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Thêm tác giả mới</div>
+            <button onclick="dongModal('modal-them')" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã tác giả *</label>
+                <input class="finp" id="them-matg" placeholder="VD: TG011">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Họ tên tác giả *</label>
+                <input class="finp" id="them-hoten" placeholder="Họ và tên đầy đủ">
+            </div>
+            <div id="them-tb" style="display:none;font-size:12px;padding:6px 10px;border-radius:var(--r-sm)"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button onclick="dongModal('modal-them')" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue" onclick="themTacGia()">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal sửa -->
+<div id="modal-sua" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:400px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Sửa tác giả</div>
+            <button onclick="dongModal('modal-sua')" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã tác giả</label>
+                <input class="finp" id="sua-matg" disabled
+                       style="opacity:.5;cursor:not-allowed">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Họ tên tác giả *</label>
+                <input class="finp" id="sua-hoten" placeholder="Họ và tên đầy đủ">
+            </div>
+            <div id="sua-tb" style="display:none;font-size:12px;padding:6px 10px;border-radius:var(--r-sm)"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button onclick="dongModal('modal-sua')" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue" onclick="suaTacGia()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function moModalThem() {
+            document.getElementById('them-matg').value  = '';
+            document.getElementById('them-hoten').value = '';
+            document.getElementById('them-tb').style.display = 'none';
+            document.getElementById('modal-them').style.display = 'flex';
+        }
+
+        function moModalSua(maTG, hoTen) {
+            document.getElementById('sua-matg').value  = maTG;
+            document.getElementById('sua-hoten').value = hoTen;
+            document.getElementById('sua-tb').style.display = 'none';
+            document.getElementById('modal-sua').style.display = 'flex';
+        }
+
+        function dongModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function hienTB(idTB, ok, msg) {
+            const tb = document.getElementById(idTB);
+            tb.style.display    = 'block';
+            tb.style.background = ok ? 'rgba(45,212,166,0.1)' : 'rgba(240,98,146,0.1)';
+            tb.style.color      = ok ? 'var(--accent-teal)'   : 'var(--accent-rose)';
+            tb.style.border     = ok ? '1px solid rgba(45,212,166,0.2)' : '1px solid rgba(240,98,146,0.2)';
+            tb.textContent      = (ok ? '✅ ' : '❌ ') + msg;
+        }
+
+        // ── Thêm tác giả ──────────────────────────────
+        async function themTacGia() {
+            const maTG  = document.getElementById('them-matg').value.trim();
+            const hoTen = document.getElementById('them-hoten').value.trim();
+
+            if (!maTG || !hoTen) {
+                hienTB('them-tb', false, 'Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+
+            const res  = await fetch('/QuanLy/ThemTacGia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maTG=${encodeURIComponent(maTG)}&hoTenTG=${encodeURIComponent(hoTen)}`
+            });
+            const data = await res.json();
+            hienTB('them-tb', data.ok, data.msg);
+            if (data.ok) setTimeout(() => window.location.reload(), 800);
+        }
+
+        // ── Sửa tác giả ───────────────────────────────
+        async function suaTacGia() {
+            const maTG  = document.getElementById('sua-matg').value;
+            const hoTen = document.getElementById('sua-hoten').value.trim();
+
+            if (!hoTen) {
+                hienTB('sua-tb', false, 'Vui lòng nhập họ tên!');
+                return;
+            }
+
+            const res  = await fetch('/QuanLy/SuaTacGia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maTG=${encodeURIComponent(maTG)}&hoTenTG=${encodeURIComponent(hoTen)}`
+            });
+            const data = await res.json();
+            hienTB('sua-tb', data.ok, data.msg);
+            if (data.ok) setTimeout(() => window.location.reload(), 800);
+        }
+
+        // ── Xóa tác giả ───────────────────────────────
+        async function xoaTacGia(maTG, hoTen) {
+            if (!confirm(`Xóa tác giả "${hoTen}"?`)) return;
+
+            const res  = await fetch('/QuanLy/XoaTacGia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maTG=${encodeURIComponent(maTG)}`
+            });
+            const data = await res.json();
+            alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
+            if (data.ok) window.location.reload();
+        }
+    </script>
+}
