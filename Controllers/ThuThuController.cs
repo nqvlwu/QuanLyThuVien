@@ -11,11 +11,13 @@ namespace LibraryOS.Controllers
     {
         private readonly DashboardService _svc;
         private readonly PhieuMuonService _phieuMuon;
+        private readonly ThuThuService _tt;
 
-        public ThuThuController(DashboardService svc, PhieuMuonService phieuMuon)
+        public ThuThuController(DashboardService svc, PhieuMuonService phieuMuon, ThuThuService tt)
         {
             _svc = svc;
             _phieuMuon = phieuMuon;
+            _tt = tt;
         }
 
         public IActionResult Dashboard()
@@ -108,9 +110,60 @@ namespace LibraryOS.Controllers
             var (ok, msg) = _phieuMuon.TraSach(maPM);
             return Json(new { ok, msg });
         }
-        public IActionResult PhieuNhap() { ViewData["Title"] = "Phiếu nhập"; ViewData["ActiveMenu"] = "phieunhap"; return View(); }
-        public IActionResult TheTV() { ViewData["Title"] = "Thẻ thư viện"; ViewData["ActiveMenu"] = "thethuvien"; return View(); }
-        public IActionResult PhieuPhat() { ViewData["Title"] = "Phiếu phạt"; ViewData["ActiveMenu"] = "phieuphat"; return View(); }
+        // Phiếu nhập
+        public IActionResult PhieuNhap()
+        {
+            ViewData["Title"] = "Phiếu nhập";
+            ViewData["ActiveMenu"] = "phieunhap";
+            return View(_tt.GetPhieuNhap());
+        }
+
+        [HttpGet]
+        public IActionResult GetCTPhieuNhap(string maPN)
+        {
+            var ct = _tt.GetCTPhieuNhap(maPN);
+            return Json(ct.Select(c => new {
+                c.MaSach,
+                c.TenSach,
+                c.SoLuong,
+                DonGia = c.DonGia.ToString("N0"),
+                ThanhTien = c.ThanhTien.ToString("N0")
+            }));
+        }
+
+        // Phiếu phạt
+        public IActionResult PhieuPhat(string? trangThai = null, string? maPM = null)
+        {
+            ViewData["Title"] = "Phiếu phạt";
+            ViewData["ActiveMenu"] = "phieuphat";
+            ViewBag.TrangThai = trangThai ?? "";
+            ViewBag.MaPMParam = maPM ?? "";
+            return View(_tt.GetPhieuPhat(trangThai));
+        }
+
+        [HttpPost]
+        public IActionResult LapPhieuPhat(string maPM, string lyDo, long soTien)
+        {
+            var (ok, msg) = _tt.LapPhieuPhat(maPM, lyDo, soTien);
+            return Json(new { ok, msg });
+        }
+
+        [HttpPost]
+        public IActionResult ThuTienPhat(string maPP)
+        {
+            var (ok, msg) = _tt.ThuTienPhat(maPP);
+            return Json(new { ok, msg });
+        }
+
+        // Thẻ thư viện
+        public IActionResult TheTV(string? kw = null, string? trangThai = null)
+        {
+            ViewData["Title"] = "Thẻ thư viện";
+            ViewData["ActiveMenu"] = "thethuvien";
+            ViewBag.Keyword = kw ?? "";
+            ViewBag.TrangThai = trangThai ?? "";
+            return View(_tt.GetTheTV(kw, trangThai));
+        }
         public IActionResult Sach() { ViewData["Title"] = "Danh mục sách"; ViewData["ActiveMenu"] = "sach"; return View(); }
         public IActionResult CuonSach() { ViewData["Title"] = "Cuốn sách"; ViewData["ActiveMenu"] = "cuonsach"; return View(); }
     }

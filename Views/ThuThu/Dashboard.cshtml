@@ -60,7 +60,11 @@
                         <td>
                             @if (pm.IsQuaHan)
                             {
-                                <button class="btn b-ghost btn-sm">Lập phạt</button>
+                                <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
+                                   class="btn b-ghost btn-sm"
+                                   style="color:#f5a623;border-color:#f5a62333">
+                                    Lập phạt
+                                </a>
                             }
                             else
                             {
