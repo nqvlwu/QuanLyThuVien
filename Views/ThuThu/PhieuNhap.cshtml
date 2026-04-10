@@ -1,0 +1,114 @@
+﻿@model List<LibraryOS.Models.PhieuNhapChiTiet>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Phiếu nhập";
+    ViewData["ActiveMenu"] = "phieunhap";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh sách phiếu nhập</div>
+            <div class="ps">PHIEUNHAP · @Model.Count phiếu</div>
+        </div>
+        <button class="btn b-teal btn-sm">+ Tạo phiếu nhập</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Mã PN</th>
+                <th>Ngày nhập</th>
+                <th>Nhân viên</th>
+                <th>Số đầu sách</th>
+                <th>Tổng cuốn</th>
+                <th>Tổng tiền</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pn in Model)
+            {
+                <tr>
+                    <td class="mo" style="color:#a78bfa">@pn.MaPN</td>
+                    <td class="mo">@pn.NgayNhap</td>
+                    <td style="font-weight:500">@pn.HoTenNV</td>
+                    <td>@pn.SoDauSach đầu sách</td>
+                    <td><span class="pill p-blue">@pn.TongCuon cuốn</span></td>
+                    <td class="mo" style="color:#2dd4a6">
+                        @pn.TongTien.ToString("N0")đ
+                    </td>
+                    <td>
+                        <button class="btn b-ghost btn-sm"
+                                onclick="xemChiTiet('@pn.MaPN')">
+                            Chi tiết
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal chi tiết phiếu nhập -->
+<div id="modal-ct" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:600px;overflow:hidden">
+        <div class="ph">
+            <div>
+                <div class="pt" id="ct-title">Chi tiết phiếu nhập</div>
+            </div>
+            <button onclick="document.getElementById('modal-ct').style.display='none'"
+                    style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">
+                ✕
+            </button>
+        </div>
+        <div id="ct-body" style="padding:0"></div>
+        <div style="padding:12px 18px;border-top:1px solid var(--border);text-align:right">
+            <span style="font-size:13px;font-weight:500;color:var(--accent-teal)">
+                Tổng: <span id="ct-tong">0</span>đ
+            </span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function xemChiTiet(maPN) {
+            document.getElementById('ct-title').textContent = 'Chi tiết phiếu nhập ' + maPN;
+            document.getElementById('ct-body').innerHTML =
+                '<div style="padding:20px;text-align:center;color:var(--txt-muted)">Đang tải...</div>';
+            document.getElementById('modal-ct').style.display = 'flex';
+
+            const res  = await fetch(`/ThuThu/GetCTPhieuNhap?maPN=${maPN}`);
+            const data = await res.json();
+
+            let tong = 0;
+            const rows = data.map(c => {
+                return `<tr>
+                    <td class="mo" style="color:#a78bfa">${c.maSach}</td>
+                    <td style="font-weight:500">${c.tenSach}</td>
+                    <td style="text-align:center">${c.soLuong}</td>
+                    <td class="mo">${c.donGia}đ</td>
+                    <td class="mo" style="color:#2dd4a6">${c.thanhTien}đ</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('ct-body').innerHTML = `
+                <table>
+                    <thead><tr>
+                        <th>Mã sách</th><th>Tên sách</th>
+                        <th style="text-align:center">SL</th>
+                        <th>Đơn giá</th><th>Thành tiền</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+
+            // Tính tổng
+            const tongVal = data.reduce((s, c) => {
+                const n = parseInt(c.thanhTien.replace(/[^0-9]/g,'')) || 0;
+                return s + n;
+            }, 0);
+            document.getElementById('ct-tong').textContent =
+                new Intl.NumberFormat('vi-VN').format(tongVal);
+        }
+    </script>
+}

@@ -1,0 +1,238 @@
+﻿@model List<LibraryOS.Models.PhieuPhatRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Phiếu phạt";
+    ViewData["ActiveMenu"] = "phieuphat";
+    var trangThai = ViewBag.TrangThai as string ?? "";
+    var maPMParam = ViewBag.MaPMParam as string ?? "";
+    var tongChuaThu = Model.Where(p => p.TrangThai == "Chưa thu").Sum(p => p.SoTienPhat);
+}
+
+@* Nếu có maPM truyền vào → tự mở modal lập phạt *@
+@if (!string.IsNullOrEmpty(maPMParam))
+{
+    <script>
+        window.addEventListener('load', () => lapPhat('@maPMParam'));
+    </script>
+}
+
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="stat-card" style="--c:#f5a623;--g:rgba(245,166,35,0.09)">
+        <div class="stat-icon">💰</div>
+        <div class="stat-val">@Model.Count(p => p.TrangThai == "Chưa thu")</div>
+        <div class="stat-lbl">Phiếu chưa thu</div>
+    </div>
+    <div class="stat-card" style="--c:#f06292;--g:rgba(240,98,146,0.09)">
+        <div class="stat-icon">💸</div>
+        <div class="stat-val">@tongChuaThu.ToString("N0")đ</div>
+        <div class="stat-lbl">Tổng chưa thu</div>
+    </div>
+    <div class="stat-card" style="--c:#2dd4a6;--g:rgba(45,212,166,0.09)">
+        <div class="stat-icon">✅</div>
+        <div class="stat-val">@Model.Count(p => p.TrangThai == "Đã thu")</div>
+        <div class="stat-lbl">Đã thu xong</div>
+    </div>
+</div>
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Danh sách phiếu phạt</div>
+            <div class="ps">PHIEUPHAT · @Model.Count phiếu</div>
+        </div>
+        <button class="btn b-ghost btn-sm" onclick="lapPhat('')">+ Lập phạt thủ công</button>
+    </div>
+
+    <div class="tsearch">
+        <select onchange="window.location.href='/ThuThu/PhieuPhat?trangThai='+this.value">
+            <option value="">Tất cả trạng thái</option>
+            @if (trangThai == "Chưa thu")
+            {
+                <option value="Chưa thu" selected>Chưa thu</option>
+            }
+            else
+            {
+                <option value="Chưa thu">Chưa thu</option>
+            }
+            @if (trangThai == "Đã thu")
+            {
+                <option value="Đã thu" selected>Đã thu</option>
+            }
+            else
+            {
+                <option value="Đã thu">Đã thu</option>
+            }
+        </select>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">✅</div>Không có phiếu phạt nào</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã PP</th>
+                    <th>Mã PM</th>
+                    <th>Độc giả</th>
+                    <th>Lý do</th>
+                    <th>Số tiền</th>
+                    <th>Ngày lập</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var pp in Model)
+                {
+                    <tr>
+                        <td class="mo" style="color:#a78bfa">@pp.MaPP</td>
+                        <td class="mo">@pp.MaPM</td>
+                        <td>
+                            <div style="font-weight:500">@pp.HoTenDG</div>
+                            <div class="mo" style="font-size:10px">@pp.SoTheTV</div>
+                        </td>
+                        <td style="font-size:12px">@pp.LyDo</td>
+                        <td class="mo"
+                            style="color:@(pp.TrangThai == "Chưa thu" ? "#f5a623" : "#2dd4a6")">
+                            @pp.SoTienPhat.ToString("N0")đ
+                        </td>
+                        <td class="mo">@pp.NgayLap</td>
+                        <td>
+                            <span class="pill @(pp.TrangThai == "Chưa thu" ? "p-amber" : "p-teal")">
+                                @pp.TrangThai
+                            </span>
+                        </td>
+                        <td style="white-space:nowrap">
+                            @if (pp.TrangThai == "Chưa thu")
+                            {
+                                <button class="btn b-ghost btn-sm"
+                                        style="color:#2dd4a6"
+                                        onclick="thuTien('@pp.MaPP')">
+                                    Thu tiền
+                                </button>
+                            }
+                            else
+                            {
+                                <span style="color:var(--txt-muted);font-size:11px">Đã xong</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- Modal lập phạt -->
+<div id="modal-phat" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:440px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Lập phiếu phạt</div>
+            <button onclick="document.getElementById('modal-phat').style.display='none'"
+                    style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">
+                ✕
+            </button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã phiếu mượn</label>
+                <input class="finp" id="phat-mapm" placeholder="VD: PM005">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Lý do phạt</label>
+                <select class="finp" id="phat-lydo" onchange="goiYSoTien(this.value)">
+                    <option value="">-- Chọn lý do --</option>
+                    <option value="Quá hạn trả sách">Quá hạn trả sách</option>
+                    <option value="Sách bị rách bìa">Sách bị rách bìa</option>
+                    <option value="Sách bị ướt">Sách bị ướt</option>
+                    <option value="Mất sách">Mất sách</option>
+                    <option value="Khác">Khác</option>
+                </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Số tiền phạt (đ)</label>
+                <input class="finp" id="phat-sotien" type="number"
+                       placeholder="VD: 50000" min="1000">
+                <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted)">
+                    Gợi ý: Quá hạn 50,000đ · Rách 30,000đ · Mất 500,000đ
+                </div>
+            </div>
+            <div id="phat-tb" style="display:none;font-size:12px;padding:8px 12px;border-radius:var(--r-sm)"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end">
+                <button onclick="document.getElementById('modal-phat').style.display='none'"
+                        class="btn b-ghost">
+                    Hủy
+                </button>
+                <button class="btn b-teal" onclick="submitLapPhat()">Lập phiếu phạt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function lapPhat(maPM) {
+            document.getElementById('phat-mapm').value  = maPM;
+            document.getElementById('phat-lydo').value  = maPM ? 'Quá hạn trả sách' : '';
+            document.getElementById('phat-sotien').value = maPM ? '50000' : '';
+            document.getElementById('phat-tb').style.display = 'none';
+            document.getElementById('modal-phat').style.display = 'flex';
+            if (maPM) goiYSoTien('Quá hạn trả sách');
+        }
+
+        function goiYSoTien(lyDo) {
+            const map = {
+                'Quá hạn trả sách': 50000,
+                'Sách bị rách bìa': 30000,
+                'Sách bị ướt':      40000,
+                'Mất sách':         500000,
+            };
+            if (map[lyDo])
+                document.getElementById('phat-sotien').value = map[lyDo];
+        }
+
+        async function submitLapPhat() {
+            const maPM   = document.getElementById('phat-mapm').value.trim();
+            const lyDo   = document.getElementById('phat-lydo').value;
+            const soTien = document.getElementById('phat-sotien').value;
+            const tb     = document.getElementById('phat-tb');
+
+            if (!maPM || !lyDo || !soTien) {
+                tb.style.display    = 'block';
+                tb.style.background = 'rgba(240,98,146,0.1)';
+                tb.style.color      = 'var(--accent-rose)';
+                tb.textContent      = '❌ Vui lòng nhập đầy đủ thông tin!';
+                return;
+            }
+
+            const res  = await fetch('/ThuThu/LapPhieuPhat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maPM=${encodeURIComponent(maPM)}&lyDo=${encodeURIComponent(lyDo)}&soTien=${soTien}`
+            });
+            const data = await res.json();
+
+            tb.style.display    = 'block';
+            tb.style.background = data.ok ? 'rgba(45,212,166,0.1)' : 'rgba(240,98,146,0.1)';
+            tb.style.color      = data.ok ? 'var(--accent-teal)'   : 'var(--accent-rose)';
+            tb.textContent      = (data.ok ? '✅ ' : '❌ ') + data.msg;
+
+            if (data.ok) setTimeout(() => window.location.reload(), 800);
+        }
+
+        async function thuTien(maPP) {
+            if (!confirm(`Thu tiền phạt phiếu ${maPP}?`)) return;
+            const res  = await fetch('/ThuThu/ThuTienPhat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maPP=${encodeURIComponent(maPP)}`
+            });
+            const data = await res.json();
+            alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
+            if (data.ok) window.location.reload();
+        }
+    </script>
+}

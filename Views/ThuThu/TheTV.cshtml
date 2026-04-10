@@ -1,0 +1,106 @@
+﻿@model List<LibraryOS.Models.TheThuVienRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Thẻ thư viện";
+    ViewData["ActiveMenu"] = "thethuvien";
+    var kw = ViewBag.Keyword as string ?? "";
+    var trangThai = ViewBag.TrangThai as string ?? "";
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Quản lý thẻ thư viện</div>
+            <div class="ps">THETHUVIEN · @Model.Count thẻ</div>
+        </div>
+        <button class="btn b-teal btn-sm">+ Cấp thẻ mới</button>
+    </div>
+
+    <form method="get" asp-action="TheTV">
+        <div class="tsearch">
+            <input name="kw" value="@kw" placeholder="Tìm số thẻ, họ tên...">
+            <select name="trangThai" onchange="this.form.submit()">
+                <option value="">Tất cả</option>
+                @if (trangThai == "Còn hạn")
+                {
+                    <option value="Còn hạn" selected>Còn hạn</option>
+                }
+                else
+                {
+                    <option value="Còn hạn">Còn hạn</option>
+                }
+                @if (trangThai == "Hết hạn")
+                {
+                    <option value="Hết hạn" selected>Hết hạn</option>
+                }
+                else
+                {
+                    <option value="Hết hạn">Hết hạn</option>
+                }
+            </select>
+            <button type="submit" class="btn b-ghost btn-sm">Tìm</button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">🪪</div>Không tìm thấy thẻ nào</div>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Số thẻ</th>
+                    <th>Họ tên</th>
+                    <th>Giới tính</th>
+                    <th>Ngày bắt đầu</th>
+                    <th>Ngày hết hạn</th>
+                    <th>Trạng thái</th>
+                    <th>Đang mượn</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var the in Model)
+                {
+                    <tr>
+                        <td class="mo" style="color:#a78bfa">@the.SoTheTV</td>
+                        <td style="font-weight:500">@the.HoTenDG</td>
+                        <td>@the.GioiTinh</td>
+                        <td class="mo">@the.NgayBatDau</td>
+                        <td class="mo"
+                            style="color:@(the.TrangThai == "Hết hạn" ? "#f06292" : "")">
+                            @the.NgayHetHan
+                        </td>
+                        <td>
+                            <span class="pill @(the.TrangThai == "Còn hạn" ? "p-teal" : "p-rose")">
+                                @the.TrangThai
+                            </span>
+                        </td>
+                        <td>
+                            @if (the.DangMuon > 0)
+                            {
+                                <span class="pill p-blue">@the.DangMuon cuốn</span>
+                            }
+                            else
+                            {
+                                <span style="color:var(--txt-muted);font-size:11px">—</span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap">
+                            <button class="btn b-ghost btn-sm">Sửa</button>
+                            @if (the.TrangThai == "Hết hạn")
+                            {
+                                <button class="btn b-ghost btn-sm"
+                                        style="color:#2dd4a6;margin-left:4px">
+                                    Gia hạn
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
