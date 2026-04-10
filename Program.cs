@@ -4,6 +4,7 @@ using LibraryOS.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<DocGiaService>();
 builder.Services.AddScoped<AuthService>();   
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<PhieuMuonService>();

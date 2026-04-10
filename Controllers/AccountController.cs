@@ -46,8 +46,8 @@ namespace LibraryOS.Controllers
                 new Claim("Role",          user.Role),
                 new Claim(ClaimTypes.Role, user.DbRole),
                 new Claim("DbRole",        user.DbRole),
-                new Claim("MaNV",          user.MaNV),      // ← thêm
-                new Claim("SoTheTV",       user.SoTheTV),   // ← thêm
+                new Claim("MaNV",          user.MaNV),     
+                new Claim("SoTheTV",       user.SoTheTV),   
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

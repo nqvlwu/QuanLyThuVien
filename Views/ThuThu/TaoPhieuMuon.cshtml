@@ -141,7 +141,7 @@
                 <label class="sach-item @(isSelected ? "selected" : "")"
                        data-ten="@cs.TenSach.ToLower()"
                        data-ma="@cs.MaCuonSach.ToLower()"
-                       onclick="toggleChon(this)">
+                       onclick="toggleChon(this, event)">
                     <input type="checkbox"
                            name="DanhSachCuonSach"
                            value="@cs.MaCuonSach"
@@ -173,28 +173,30 @@
 let soChon = @Model.DanhSachCuonSach.Count;
 
 // Toggle chọn cuốn sách
-function toggleChon(label) {
-    const cb = label.querySelector('input[type=checkbox]');
-    const check = label.querySelector('.sach-check');
+        function toggleChon(label, event) {
+            event.preventDefault(); // ← chặn label tự trigger checkbox
 
-    if (!cb.checked) {
-        if (soChon >= 5) {
-            alert('Chỉ được chọn tối đa 5 cuốn!');
-            return;
+            const cb    = label.querySelector('input[type=checkbox]');
+            const check = label.querySelector('.sach-check');
+
+            if (!cb.checked) {
+                if (soChon >= 5) {
+                    alert('Chỉ được chọn tối đa 5 cuốn!');
+                    return;
+                }
+                cb.checked = true;
+                label.classList.add('selected');
+                check.textContent = '✓';
+                soChon++;
+            } else {
+                cb.checked = false;
+                label.classList.remove('selected');
+                check.textContent = '';
+                soChon--;
+            }
+
+            document.getElementById('so-chon').textContent = soChon;
         }
-        cb.checked = true;
-        label.classList.add('selected');
-        check.textContent = '✓';
-        soChon++;
-    } else {
-        cb.checked = false;
-        label.classList.remove('selected');
-        check.textContent = '';
-        soChon--;
-    }
-
-    document.getElementById('so-chon').textContent = soChon;
-}
 
 // Kiểm tra thẻ realtime (debounce 500ms)
 let timeout;

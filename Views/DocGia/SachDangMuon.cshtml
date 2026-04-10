@@ -1,0 +1,79 @@
+﻿@model LibraryOS.Models.DocGiaDashboardVM
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Sách đang mượn";
+    ViewData["ActiveMenu"] = "phieumuon";
+}
+
+<div class="pgrid">
+    <div class="panel">
+        <div class="ph">
+            <div class="pt">Sách đang mượn</div>
+            <div class="ps">@Model.SoSachDangMuon / 5 cuốn tối đa</div>
+        </div>
+
+        @if (!Model.SachDangMuon.Any())
+        {
+            <div class="empty"><div class="empty-icon">📭</div>Bạn chưa mượn sách nào</div>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tên sách</th>
+                        <th>Mã cuốn</th>
+                        <th>Ngày mượn</th>
+                        <th>Hạn trả</th>
+                        <th>Còn lại</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.SachDangMuon)
+                    {
+                        <tr>
+                            <td style="font-weight:500">@s.TenSach</td>
+                            <td class="mo">@s.MaCuonSach</td>
+                            <td class="mo">@s.NgayMuon</td>
+                            <td class="mo"
+                                style="color:@(s.NgayConLai <= 3 ? "#f06292" : s.NgayConLai <= 7 ? "#f5a623" : "")">
+                                @s.NgayTra
+                            </td>
+                            <td style="font-family:var(--mono);
+                                               color:@(s.NgayConLai < 0 ? "#f06292" : s.NgayConLai <= 3 ? "#f5a623" : "#2dd4a6")">
+                                @(s.NgayConLai < 0 ? "Quá hạn!" : s.NgayConLai + " ngày")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="panel">
+        <div class="ph">
+            <div class="pt">Lịch sử mượn</div>
+            <div class="ps">@Model.LichSuMuon.Count lần gần nhất</div>
+        </div>
+
+        @if (!Model.LichSuMuon.Any())
+        {
+            <div class="empty"><div class="empty-icon">📋</div>Chưa có lịch sử mượn</div>
+        }
+        else
+        {
+            @foreach (var ls in Model.LichSuMuon)
+            {
+                <div class="feed-item">
+                    <div class="fdot"
+                         style="background:@(ls.TinhTrang == "Đã trả" ? "#2dd4a6" : "#f5a623")">
+                    </div>
+                    <div>
+                        <div class="ftxt"><strong>@ls.TenSach</strong> — @ls.TinhTrang</div>
+                        <div class="ftime">@ls.MaPM · @ls.NgayTra</div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>

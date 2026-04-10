@@ -65,7 +65,10 @@
                             else
                             {
 
-                                <button class="btn b-ghost btn-sm">Xác nhận trả</button>
+                                <button class="btn b-ghost btn-sm"
+                                        onclick="xacNhanTra('@pm.MaPM')">
+                                    Xác nhận trả
+                                </button>
                             }
                         </td>
                     </tr>
@@ -95,3 +98,19 @@
         </tbody>
     </table>
 </div>
+@section Scripts {
+    <script>
+        async function xacNhanTra(maPM) {
+            if (!confirm(`Xác nhận trả sách cho phiếu ${maPM}?`)) return;
+
+            const res  = await fetch('/ThuThu/TraSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maPM=${encodeURIComponent(maPM)}`
+            });
+            const data = await res.json();
+            alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
+            if (data.ok) window.location.reload();
+        }
+    </script>
+}

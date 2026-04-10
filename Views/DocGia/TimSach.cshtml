@@ -1,0 +1,66 @@
+﻿@model List<LibraryOS.Models.SachRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Tìm kiếm sách";
+    ViewData["ActiveMenu"] = "sach";
+    var kw = ViewBag.Keyword as string ?? "";
+    var maTL = ViewBag.MaTL as string ?? "";
+    var dsTheLoai = ViewBag.DsTheLoai as List<LibraryOS.Models.TheLoaiRow> ?? new();
+}
+
+<div class="panel full">
+    <div class="ph">
+        <div>
+            <div class="pt">Tìm kiếm sách</div>
+            <div class="ps">@Model.Count kết quả</div>
+        </div>
+    </div>
+
+    <form method="get" asp-action="TimSach">
+        <div class="tsearch">
+            <input name="kw" value="@kw" placeholder="Nhập tên sách, tác giả...">
+            <select name="maTL" onchange="this.form.submit()">
+                <option value="">Tất cả thể loại</option>
+                @foreach (var tl in dsTheLoai)
+                {
+                    if (maTL == tl.MaTL)
+                    {
+                        <option value="@tl.MaTL" selected>@tl.TenTL</option>
+                    }
+                    else
+                    {
+                        <option value="@tl.MaTL">@tl.TenTL</option>
+                    }
+                }
+            </select>
+            <button type="submit" class="btn b-ghost btn-sm">Tìm</button>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty"><div class="empty-icon">🔍</div>Không tìm thấy sách nào</div>
+    }
+    else
+    {
+        <div class="book-grid">
+            @foreach (var s in Model)
+            {
+                <div class="book-card">
+                    <div class="bspine" style="background:@(s.ConLai > 0 ? "#2dd4a6" : "#f06292")"></div>
+                    <div class="bname">@s.TenSach</div>
+                    <div class="bauthor">@s.TacGia</div>
+                    <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted);margin-bottom:8px">
+                        @s.TenNXB · @s.NamXB
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between">
+                        <span class="pill p-teal" style="font-size:9px">@s.TheLoai</span>
+                        <span class="pill @(s.ConLai > 0 ? "p-teal" : "p-rose")">
+                            @(s.ConLai > 0 ? $"Còn {s.ConLai} cuốn" : "Hết sách")
+                        </span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
