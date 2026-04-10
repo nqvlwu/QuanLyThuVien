@@ -1,0 +1,73 @@
+﻿@model List<LibraryOS.Models.SachRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Theo thể loại";
+    ViewData["ActiveMenu"] = "theloai";
+    var maTL = ViewBag.MaTL as string ?? "";
+    var dsTheLoai = ViewBag.DsTheLoai as List<LibraryOS.Models.TheLoaiRow> ?? new();
+    var tenTL = dsTheLoai.FirstOrDefault(t => t.MaTL == maTL)?.TenTL ?? "Tất cả";
+    var mauPill = new[] { "p-blue", "p-teal", "p-purple", "p-amber", "p-rose", "p-blue", "p-teal", "p-purple" };
+}
+
+<div class="pgrid" style="margin-bottom:14px">
+    <!-- Danh sách thể loại bên trái -->
+    <div class="panel" style="grid-column:1;height:fit-content">
+        <div class="ph"><div class="pt">Thể loại</div></div>
+        @{
+            int idx = 0;
+        }
+        @foreach (var tl in dsTheLoai)
+        {
+            var pill = mauPill[idx % mauPill.Length];
+            <a href="/DocGia/TheLoai?maTL=@tl.MaTL"
+               style="display:flex;align-items:center;justify-content:space-between;
+                          padding:10px 18px;border-bottom:1px solid var(--border);
+                          text-decoration:none;transition:background .12s;
+                          background:@(maTL == tl.MaTL ? "var(--bg-hover)" : "transparent")">
+                <span style="font-size:13px;color:@(maTL == tl.MaTL ? "var(--txt-primary)" : "var(--txt-secondary)")">
+                    @tl.TenTL
+                </span>
+                <span class="pill @pill">@tl.SoSach</span>
+            </a>
+            idx++;
+        }
+    </div>
+
+    <!-- Sách theo thể loại bên phải -->
+    <div class="panel">
+        <div class="ph">
+            <div>
+                <div class="pt">@(maTL != "" ? tenTL : "Chọn thể loại để xem sách")</div>
+                <div class="ps">@Model.Count đầu sách</div>
+            </div>
+        </div>
+
+        @if (maTL == "")
+        {
+            <div class="empty"><div class="empty-icon">👈</div>Chọn thể loại bên trái</div>
+        }
+        else if (!Model.Any())
+        {
+            <div class="empty"><div class="empty-icon">📭</div>Chưa có sách nào trong thể loại này</div>
+        }
+        else
+        {
+            <div class="book-grid">
+                @foreach (var s in Model)
+                {
+                    <div class="book-card">
+                        <div class="bspine" style="background:@(s.ConLai > 0 ? "#2dd4a6" : "#f06292")"></div>
+                        <div class="bname">@s.TenSach</div>
+                        <div class="bauthor">@s.TacGia · @s.NamXB</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span style="font-size:10px;font-family:var(--mono);color:var(--txt-muted)">@s.TenNXB</span>
+                            <span class="pill @(s.ConLai > 0 ? "p-teal" : "p-rose")">
+                                @(s.ConLai > 0 ? $"Còn {s.ConLai}" : "Hết")
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

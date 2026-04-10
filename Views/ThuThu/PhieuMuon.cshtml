@@ -55,7 +55,7 @@
                         "Quá hạn"   => "p-rose",
                         _           => "p-muted"
                     };
-                    <tr>
+                    <tr data-mapm="@pm.MaPM">
                         <td class="mo">@pm.MaPM</td>
                         <td class="mo">@pm.SoTheTV</td>
                         <td>@pm.HoTenDG</td>
@@ -66,11 +66,18 @@
                         <td>
                             @if (pm.TinhTrang == "Đang mượn")
                             {
-                                <button class="btn b-ghost btn-sm">Xác nhận trả</button>
+                                <button class="btn b-ghost btn-sm"
+                                        onclick="xacNhanTra('@pm.MaPM')">
+                                    Xác nhận trả
+                                </button>
                             }
                             else if (pm.TinhTrang == "Quá hạn")
                             {
-                                <button class="btn b-ghost btn-sm" style="color:#f5a623;border-color:#f5a62333">Lập phạt</button>
+                                <button class="btn b-ghost btn-sm"
+                                        style="color:#f5a623;border-color:#f5a62333"
+                                        onclick="lapPhat('@pm.MaPM')">
+                                    Lập phạt
+                                </button>
                             }
                             else
                             {
@@ -93,5 +100,50 @@ function locBang(kw) {
         tr.style.display = text.includes(kw) ? '' : 'none';
     });
 }
+        // ── Tìm kiếm ────────────────────────────────────
+        function locBang(kw) {
+            kw = kw.toLowerCase();
+            document.querySelectorAll('#bang-phieu tbody tr').forEach(tr =>
+                tr.style.display = tr.innerText.toLowerCase().includes(kw) ? '' : 'none');
+        }
+
+        // ── Xác nhận trả sách ───────────────────────────
+        async function xacNhanTra(maPM) {
+            if (!confirm(`Xác nhận trả sách cho phiếu ${maPM}?\nThao tác này sẽ cập nhật trạng thái sách về kho.`))
+                return;
+
+            const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
+
+            const res  = await fetch(`/${controller}/TraSach`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maPM=${encodeURIComponent(maPM)}`
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                // Cập nhật UI ngay không cần reload
+                const row = document.querySelector(`tr[data-mapm="${maPM}"]`);
+                if (row) {
+                    // Đổi pill trạng thái
+                    const pill = row.querySelector('.pill');
+                    if (pill) {
+                        pill.className = 'pill p-teal';
+                        pill.textContent = 'Đã trả';
+                    }
+                    // Ẩn nút
+                    const btn = row.querySelector('button');
+                    if (btn) btn.outerHTML = '<span style="color:var(--txt-muted);font-size:11px">—</span>';
+                }
+                alert('✅ ' + data.msg);
+                window.location.reload();
+            } else {
+                alert('❌ ' + data.msg);
+            }
+        }
+
+        async function lapPhat(maPM) {
+            alert('Chức năng lập phạt cho ' + maPM + ' đang phát triển...');
+        }
 </script>
 }

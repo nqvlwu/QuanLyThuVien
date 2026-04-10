@@ -102,7 +102,12 @@ namespace LibraryOS.Controllers
             ViewBag.TinhTrang = tinhTrang;
             return View(ds);
         }
-
+        [HttpPost]
+        public IActionResult TraSach(string maPM)
+        {
+            var (ok, msg) = _phieuMuon.TraSach(maPM);
+            return Json(new { ok, msg });
+        }
         public IActionResult PhieuNhap() { ViewData["Title"] = "Phiếu nhập"; ViewData["ActiveMenu"] = "phieunhap"; return View(); }
         public IActionResult TheTV() { ViewData["Title"] = "Thẻ thư viện"; ViewData["ActiveMenu"] = "thethuvien"; return View(); }
         public IActionResult PhieuPhat() { ViewData["Title"] = "Phiếu phạt"; ViewData["ActiveMenu"] = "phieuphat"; return View(); }

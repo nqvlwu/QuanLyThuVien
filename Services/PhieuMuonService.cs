@@ -114,7 +114,74 @@ namespace LibraryOS.Services
             var next = Convert.ToInt32(cmd.ExecuteScalar());
             return "PM" + next.ToString("D3");
         }
+        // ── Trả sách ─────────────────────────
+        public (bool Ok, string ThongBao) TraSach(string maPM)
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            using var tran = conn.BeginTransaction();
+            try
+            {
+                // Kiểm tra phiếu mượn có đang mượn không
+                var sqlCheck = @"
+            SELECT TinhTrang FROM PHIEUMUON
+            WHERE maPM = :maPM";
+                using (var cmd = new OracleCommand(sqlCheck, conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maPM", maPM);
+                    var tt = cmd.ExecuteScalar()?.ToString();
+                    if (tt == null)
+                        return (false, "Không tìm thấy phiếu mượn!");
+                    if (tt == "Đã trả")
+                        return (false, "Phiếu mượn này đã được trả rồi!");
+                }
 
+                // Cập nhật TinhTrang cuốn sách → 1 (còn lại)
+                var sqlCS = @"
+            UPDATE CUONSACH SET TinhTrang = 1
+            WHERE MaCuonSach IN (
+                SELECT MaCuonSach FROM CT_PHIEUMUON
+                WHERE maPM = :maPM
+            )";
+                using (var cmd = new OracleCommand(sqlCS, conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maPM", maPM);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Cập nhật NgayTra thực tế trong CT_PHIEUMUON
+                var sqlCT = @"
+            UPDATE CT_PHIEUMUON SET NgayTra = SYSDATE
+            WHERE maPM = :maPM AND NgayTra > SYSDATE";
+                using (var cmd = new OracleCommand(sqlCT, conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maPM", maPM);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Cập nhật PHIEUMUON → Đã trả
+                var sqlPM = @"
+            UPDATE PHIEUMUON SET TinhTrang = N'Đã trả'
+            WHERE maPM = :maPM";
+                using (var cmd = new OracleCommand(sqlPM, conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maPM", maPM);
+                    cmd.ExecuteNonQuery();
+                }
+
+                tran.Commit();
+                return (true, $"Trả sách thành công! Phiếu {maPM} đã được cập nhật.");
+            }
+            catch (Exception ex)
+            {
+                tran.Rollback();
+                return (false, $"Lỗi: {ex.Message}");
+            }
+        }
         // ── Tạo phiếu mượn ─────────────────────────
         public (bool Ok, string ThongBao) TaoPhieuMuon(
             string soTheTV,

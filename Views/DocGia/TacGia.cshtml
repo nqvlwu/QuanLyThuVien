@@ -1,0 +1,67 @@
+﻿@model List<LibraryOS.Models.SachRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Theo tác giả";
+    ViewData["ActiveMenu"] = "tacgia";
+    var maTG = ViewBag.MaTG as string ?? "";
+    var dsTacGia = ViewBag.DsTacGia as List<LibraryOS.Models.TacGiaRow> ?? new();
+    var tenTG = dsTacGia.FirstOrDefault(t => t.MaTG == maTG)?.HoTenTG ?? "";
+}
+
+<div class="pgrid" style="margin-bottom:14px">
+    <!-- Danh sách tác giả -->
+    <div class="panel" style="height:fit-content">
+        <div class="ph"><div class="pt">Tác giả</div></div>
+        @foreach (var tg in dsTacGia)
+        {
+            <a href="/DocGia/TacGia?maTG=@tg.MaTG"
+               style="display:flex;align-items:center;justify-content:space-between;
+                          padding:10px 18px;border-bottom:1px solid var(--border);
+                          text-decoration:none;transition:background .12s;
+                          background:@(maTG == tg.MaTG ? "var(--bg-hover)" : "transparent")">
+                <span style="font-size:13px;color:@(maTG == tg.MaTG ? "var(--txt-primary)" : "var(--txt-secondary)")">
+                    @tg.HoTenTG
+                </span>
+                <span class="pill p-blue">@tg.SoSach</span>
+            </a>
+        }
+    </div>
+
+    <!-- Sách của tác giả -->
+    <div class="panel">
+        <div class="ph">
+            <div>
+                <div class="pt">@(maTG != "" ? $"Sách của {tenTG}" : "Chọn tác giả để xem sách")</div>
+                <div class="ps">@Model.Count đầu sách</div>
+            </div>
+        </div>
+
+        @if (maTG == "")
+        {
+            <div class="empty"><div class="empty-icon">👈</div>Chọn tác giả bên trái</div>
+        }
+        else if (!Model.Any())
+        {
+            <div class="empty"><div class="empty-icon">📭</div>Tác giả này chưa có sách</div>
+        }
+        else
+        {
+            <div class="book-grid">
+                @foreach (var s in Model)
+                {
+                    <div class="book-card">
+                        <div class="bspine" style="background:#4d9ef7"></div>
+                        <div class="bname">@s.TenSach</div>
+                        <div class="bauthor">@s.TenNXB · @s.NamXB</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center">
+                            <span class="pill p-teal" style="font-size:9px">@s.TheLoai</span>
+                            <span class="pill @(s.ConLai > 0 ? "p-teal" : "p-rose")">
+                                @(s.ConLai > 0 ? $"Còn {s.ConLai}" : "Hết")
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
