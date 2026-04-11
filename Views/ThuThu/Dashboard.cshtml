@@ -60,15 +60,21 @@
                         <td>
                             @if (pm.IsQuaHan)
                             {
-                                <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
-                                   class="btn b-ghost btn-sm"
-                                   style="color:#f5a623;border-color:#f5a62333">
-                                    Lập phạt
-                                </a>
+                                @if (pm.DaCoPhieuPhat > 0)
+                                {
+                                    <span class="pill p-amber">Đã lập phạt</span>
+                                }
+                                else
+                                {
+                                    <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
+                                       class="btn b-ghost btn-sm"
+                                       style="color:#f5a623;border-color:#f5a62333">
+                                        Lập phạt
+                                    </a>
+                                }
                             }
                             else
                             {
-
                                 <button class="btn b-ghost btn-sm"
                                         onclick="xacNhanTra('@pm.MaPM')">
                                     Xác nhận trả

@@ -177,7 +177,7 @@
         function lapPhat(maPM) {
             document.getElementById('phat-mapm').value  = maPM;
             document.getElementById('phat-lydo').value  = maPM ? 'Quá hạn trả sách' : '';
-            document.getElementById('phat-sotien').value = maPM ? '50000' : '';
+            document.getElementById('phat-sotien').value = maPM ? '' : '';
             document.getElementById('phat-tb').style.display = 'none';
             document.getElementById('modal-phat').style.display = 'flex';
             if (maPM) goiYSoTien('Quá hạn trả sách');
@@ -188,7 +188,7 @@
                 'Quá hạn trả sách': 50000,
                 'Sách bị rách bìa': 30000,
                 'Sách bị ướt':      40000,
-                'Mất sách':         500000,
+                'Mất sách':         1500000,
             };
             if (map[lyDo])
                 document.getElementById('phat-sotien').value = map[lyDo];
