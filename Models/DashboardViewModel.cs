@@ -45,6 +45,7 @@
         public string TenNV { get; set; } = "";
         public int SoCuon { get; set; }
         public bool IsQuaHan { get; set; }
+        public int DaCoPhieuPhat { get; set; }
     }
 
     // Thêm vào DashboardViewmodel.cs

@@ -71,13 +71,21 @@
                                     Xác nhận trả
                                 </button>
                             }
-                            else if (pm.TinhTrang == "Quá hạn")
+                            else if (pm.TinhTrang == "Quá hạn" || pm.TinhTrang == "Đang mượn")
                             {
-                                <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
-                                   class="btn b-ghost btn-sm"
-                                   style="color:#f5a623;border-color:#f5a62333">
-                                    Lập phạt
-                                </a>
+                                @if (pm.DaCoPhieuPhat > 0)
+                                {
+                                    <!-- Đã có phiếu phạt chưa thu → hiện badge thay vì nút -->
+                                    <span class="pill p-amber">Đã lập phạt</span>
+                                }
+                                else
+                                {
+                                    <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
+                                       class="btn b-ghost btn-sm"
+                                       style="color:#f5a623;border-color:#f5a62333">
+                                        Lập phạt
+                                    </a>
+                                }
                             }
                             else
                             {

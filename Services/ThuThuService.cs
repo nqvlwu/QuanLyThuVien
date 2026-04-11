@@ -109,13 +109,24 @@ namespace LibraryOS.Services
             return list;
         }
 
-        public (bool Ok, string ThongBao) LapPhieuPhat(
-            string maPM, string lyDo, long soTien)
+        public (bool Ok, string ThongBao) LapPhieuPhat(string maPM, string lyDo, long soTien)
         {
             using var conn = new OracleConnection(_conn);
             conn.Open();
             try
             {
+                // Kiểm tra PM này đã có phiếu phạt CHƯA THU chưa
+                var sqlCheck = @"
+            SELECT COUNT(*) FROM PHIEUPHAT
+            WHERE maPM = :maPM AND TrangThai = N'Chưa thu'";
+                using (var cmd = new OracleCommand(sqlCheck, conn))
+                {
+                    cmd.Parameters.Add("maPM", maPM);
+                    var count = Convert.ToInt32(cmd.ExecuteScalar());
+                    if (count > 0)
+                        return (false, $"Phiếu mượn {maPM} đã có phiếu phạt chưa thu rồi!");
+                }
+
                 // Sinh mã PP mới
                 var sqlMa = "SELECT NVL(MAX(TO_NUMBER(SUBSTR(maPP,3))),0)+1 FROM PHIEUPHAT";
                 int next;
@@ -123,21 +134,26 @@ namespace LibraryOS.Services
                     next = Convert.ToInt32(cmd.ExecuteScalar());
                 var maPP = "PP" + next.ToString("D3");
 
+                // Insert phiếu phạt
                 var sql = @"
-                    INSERT INTO PHIEUPHAT (maPP, NgayLap, LyDo, SoTienPhat, TrangThai, maPM)
-                    VALUES (:maPP, SYSDATE, :lyDo, :soTien, N'Chưa thu', :maPM)";
-                using var cmd2 = new OracleCommand(sql, conn);
-                cmd2.Parameters.Add("maPP", maPP);
-                cmd2.Parameters.Add("lyDo", lyDo);
-                cmd2.Parameters.Add("soTien", soTien);
-                cmd2.Parameters.Add("maPM", maPM);
-                cmd2.ExecuteNonQuery();
+            INSERT INTO PHIEUPHAT (maPP, NgayLap, LyDo, SoTienPhat, TrangThai, maPM)
+            VALUES (:maPP, SYSDATE, :lyDo, :soTien, N'Chưa thu', :maPM)";
+                using (var cmd = new OracleCommand(sql, conn))
+                {
+                    cmd.Parameters.Add("maPP", maPP);
+                    cmd.Parameters.Add("lyDo", lyDo);
+                    cmd.Parameters.Add("soTien", soTien);
+                    cmd.Parameters.Add("maPM", maPM);
+                    cmd.ExecuteNonQuery();
+                }
 
-                // Cập nhật trạng thái phiếu mượn
+                // Cập nhật trạng thái phiếu mượn → Quá hạn
                 var sqlPM = "UPDATE PHIEUMUON SET TinhTrang = N'Quá hạn' WHERE maPM = :maPM";
-                using var cmd3 = new OracleCommand(sqlPM, conn);
-                cmd3.Parameters.Add("maPM", maPM);
-                cmd3.ExecuteNonQuery();
+                using (var cmd = new OracleCommand(sqlPM, conn))
+                {
+                    cmd.Parameters.Add("maPM", maPM);
+                    cmd.ExecuteNonQuery();
+                }
 
                 return (true, $"Lập phiếu phạt {maPP} thành công!");
             }

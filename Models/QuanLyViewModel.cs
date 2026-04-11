@@ -11,6 +11,8 @@
         public string TheLoai { get; set; } = "";
         public int TongCuon { get; set; }
         public int ConLai { get; set; }
+        public bool DaAn { get; set; }
+        public string MaNXB { get; set; } = "";
     }
 
     public class NhaXuatBanRow

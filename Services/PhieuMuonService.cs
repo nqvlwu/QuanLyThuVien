@@ -38,16 +38,19 @@ namespace LibraryOS.Services
             conn.Open();
 
             var sql = @"
-        SELECT pm.maPM, pm.SoTheTV, ttv.HoTenDG,
-               TO_CHAR(pm.NgayMuon,'DD/MM/YYYY') AS NgayMuon,
-               pm.TinhTrang,
-               (SELECT COUNT(*) FROM CT_PHIEUMUON c WHERE c.maPM = pm.maPM) AS SoCuon,
-               nv.HoTenNV AS TenNV
-        FROM PHIEUMUON pm
-        LEFT JOIN THETHUVIEN ttv ON pm.SoTheTV  = ttv.SoTheTV
-        LEFT JOIN NHANVIEN   nv  ON pm.MaNV     = nv.MaNV
-        WHERE (:tinhTrang IS NULL OR pm.TinhTrang = :tinhTrang)
-        ORDER BY pm.NgayMuon DESC";
+            SELECT pm.maPM, pm.SoTheTV, ttv.HoTenDG,
+           TO_CHAR(pm.NgayMuon,'DD/MM/YYYY') AS NgayMuon,
+           pm.TinhTrang,
+           (SELECT COUNT(*) FROM CT_PHIEUMUON c WHERE c.maPM = pm.maPM) AS SoCuon,
+           nv.HoTenNV AS TenNV,
+           (SELECT COUNT(*) FROM PHIEUPHAT pp
+            WHERE pp.maPM = pm.maPM
+              AND pp.TrangThai = N'Chưa thu') AS DaCoPhieuPhat
+            FROM PHIEUMUON pm
+            LEFT JOIN THETHUVIEN ttv ON pm.SoTheTV  = ttv.SoTheTV
+            LEFT JOIN NHANVIEN   nv  ON pm.MaNV     = nv.MaNV
+            WHERE (:tinhTrang IS NULL OR pm.TinhTrang = :tinhTrang)
+            ORDER BY pm.NgayMuon DESC";
 
             using var cmd = new OracleCommand(sql, conn);
             cmd.Parameters.Add("tinhTrang", (object?)tinhTrang ?? DBNull.Value);
@@ -65,6 +68,7 @@ namespace LibraryOS.Services
                     SoCuon = Convert.ToInt32(r["SoCuon"]),
                     IsQuaHan = r["TinhTrang"].ToString() == "Quá hạn",
                     TenNV = r["TenNV"].ToString()!,
+                    DaCoPhieuPhat = Convert.ToInt32(r["DaCoPhieuPhat"]),
                 });
 
             return list;

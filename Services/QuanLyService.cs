@@ -64,29 +64,32 @@ namespace LibraryOS.Services
             conn.Open();
 
             var sql = @"
-                SELECT s.maSACH, s.TenSach, s.GiaSach, s.NamXB,
-                       n.TenNXB,
-                       (SELECT COUNT(*) FROM CUONSACH c
-                        WHERE c.maSACH = s.maSACH AND c.DaAn = 0) AS TongCuon,
-                       (SELECT COUNT(*) FROM CUONSACH c
-                        WHERE c.maSACH = s.maSACH AND c.TinhTrang = 1 AND c.DaAn = 0) AS ConLai,
-                       (SELECT LISTAGG(tg.HoTenTG, ', ')
-                        FROM TACGIA_SACH ts JOIN TACGIA tg ON ts.maTG = tg.maTG
-                        WHERE ts.maSACH = s.maSACH) AS TacGia,
-                       (SELECT LISTAGG(tl.TenTL, ', ')
-                        FROM THELOAI_SACH tls JOIN THELOAI tl ON tls.MaTL = tl.MaTL
-                        WHERE tls.maSACH = s.maSACH) AS TheLoai
-                FROM SACH s
-                LEFT JOIN NHAXUATBAN n ON s.maNXB = n.maNXB
-                WHERE (:kw IS NULL
-                   OR LOWER(s.TenSach) LIKE '%' || LOWER(:kw) || '%'
-                   OR LOWER(s.maSACH)  LIKE '%' || LOWER(:kw) || '%')
-                AND (:maTL IS NULL OR EXISTS (
-                    SELECT 1 FROM THELOAI_SACH tls
-                    WHERE tls.maSACH = s.maSACH AND tls.MaTL = :maTL))
-                ORDER BY s.maSACH";
+        SELECT s.maSACH, s.TenSach, s.GiaSach, s.NamXB,
+               s.DaAn,
+               n.TenNXB,
+               (SELECT COUNT(*) FROM CUONSACH c
+                WHERE c.maSACH = s.maSACH AND c.DaAn = 0) AS TongCuon,
+               (SELECT COUNT(*) FROM CUONSACH c
+                WHERE c.maSACH = s.maSACH
+                  AND c.TinhTrang = 1 AND c.DaAn = 0) AS ConLai,
+               (SELECT LISTAGG(tg.HoTenTG, ', ')
+                FROM TACGIA_SACH ts JOIN TACGIA tg ON ts.maTG = tg.maTG
+                WHERE ts.maSACH = s.maSACH) AS TacGia,
+               (SELECT LISTAGG(tl.TenTL, ', ')
+                FROM THELOAI_SACH tls JOIN THELOAI tl ON tls.MaTL = tl.MaTL
+                WHERE tls.maSACH = s.maSACH) AS TheLoai
+        FROM SACH s
+        LEFT JOIN NHAXUATBAN n ON s.maNXB = n.maNXB
+        WHERE (:kw IS NULL
+           OR LOWER(s.TenSach) LIKE '%' || LOWER(:kw) || '%'
+           OR LOWER(s.maSACH)  LIKE '%' || LOWER(:kw) || '%')
+        AND (:maTL IS NULL OR EXISTS (
+            SELECT 1 FROM THELOAI_SACH tls
+            WHERE tls.maSACH = s.maSACH AND tls.MaTL = :maTL))
+        ORDER BY s.DaAn ASC, s.maSACH ASC";
+            // ↑ sách chưa xóa lên trước, sách đã xóa xuống dưới
 
-            using var cmd = new OracleCommand(sql, conn);
+    using var cmd = new OracleCommand(sql, conn);
             cmd.Parameters.Add("kw", (object?)keyword ?? DBNull.Value);
             cmd.Parameters.Add("kw", (object?)keyword ?? DBNull.Value);
             cmd.Parameters.Add("maTL", (object?)maTL ?? DBNull.Value);
@@ -105,10 +108,181 @@ namespace LibraryOS.Services
                     TheLoai = r["TheLoai"].ToString()!,
                     TongCuon = Convert.ToInt32(r["TongCuon"]),
                     ConLai = Convert.ToInt32(r["ConLai"]),
+                    DaAn = Convert.ToInt32(r["DaAn"]) == 1,  // ← thêm
                 });
             return list;
         }
+        // ═══════════════════════════════════════
+        // KHÔI PHỤC SÁCH
+        // ═══════════════════════════════════════
+        public (bool Ok, string ThongBao) KhoiPhucSach(string maSach)
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            try
+            {
+                using (var cmd = new OracleCommand(
+                    "UPDATE SACH SET DaAn = 0 WHERE maSACH = :maSach", conn))
+                {
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+                using (var cmd = new OracleCommand(
+                    "UPDATE CUONSACH SET DaAn = 0 WHERE maSACH = :maSach", conn))
+                {
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+                return (true, $"Khôi phục sách {maSach} thành công!");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi: {ex.Message}");
+            }
+        }
 
+        // ═══════════════════════════════════════
+        // THÊM SÁCH MỚI
+        // ═══════════════════════════════════════
+        public (bool Ok, string ThongBao) ThemSach(
+            string maSach, string tenSach, long giaSach,
+            int namXB, string maNXB, string maTL, string maTG, int soLuong)
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            using var tran = conn.BeginTransaction();
+            try
+            {
+                // Kiểm tra mã sách đã tồn tại chưa
+                using (var cmd = new OracleCommand(
+                    "SELECT COUNT(*) FROM SACH WHERE maSACH = :maSach", conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maSach", maSach);
+                    if (Convert.ToInt32(cmd.ExecuteScalar()) > 0)
+                        return (false, $"Mã sách '{maSach}' đã tồn tại!");
+                }
+
+                // Insert SACH
+                var sql1 = @"INSERT INTO SACH (maSACH, TenSach, GiaSach, NamXB, maNXB, DaAn)
+                     VALUES (:maSach, :tenSach, :giaSach, :namXB, :maNXB, 0)";
+                using (var cmd = new OracleCommand(sql1, conn))
+                {
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.Parameters.Add("tenSach", tenSach);
+                    cmd.Parameters.Add("giaSach", giaSach);
+                    cmd.Parameters.Add("namXB", namXB);
+                    cmd.Parameters.Add("maNXB", maNXB);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Insert THELOAI_SACH
+                if (!string.IsNullOrEmpty(maTL))
+                {
+                    var sql2 = "INSERT INTO THELOAI_SACH (MaTL, maSACH) VALUES (:maTL, :maSach)";
+                    using var cmd = new OracleCommand(sql2, conn);
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maTL", maTL);
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Insert TACGIA_SACH
+                if (!string.IsNullOrEmpty(maTG))
+                {
+                    var sql3 = "INSERT INTO TACGIA_SACH (maTG, maSACH) VALUES (:maTG, :maSach)";
+                    using var cmd = new OracleCommand(sql3, conn);
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maTG", maTG);
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Insert CUONSACH theo số lượng
+                for (int i = 0; i < soLuong; i++)
+                {
+                    var sql4 = "INSERT INTO CUONSACH (maSACH, TinhTrang, DaAn) VALUES (:maSach, 1, 0)";
+                    using var cmd = new OracleCommand(sql4, conn);
+                    cmd.Transaction = tran;
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+
+                tran.Commit();
+                return (true, $"Thêm sách '{tenSach}' thành công! ({soLuong} cuốn)");
+            }
+            catch (Exception ex)
+            {
+                tran.Rollback();
+                return (false, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // ═══════════════════════════════════════
+        // SỬA SÁCH
+        // ═══════════════════════════════════════
+        public (bool Ok, string ThongBao) SuaSach(
+            string maSach, string tenSach, long giaSach, int namXB, string maNXB)
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            try
+            {
+                var sql = @"UPDATE SACH
+                    SET TenSach = :tenSach,
+                        GiaSach = :giaSach,
+                        NamXB   = :namXB,
+                        maNXB   = :maNXB
+                    WHERE maSACH = :maSach";
+                using var cmd = new OracleCommand(sql, conn);
+                cmd.Parameters.Add("tenSach", tenSach);
+                cmd.Parameters.Add("giaSach", giaSach);
+                cmd.Parameters.Add("namXB", namXB);
+                cmd.Parameters.Add("maNXB", maNXB);
+                cmd.Parameters.Add("maSach", maSach);
+                cmd.ExecuteNonQuery();
+                return (true, "Cập nhật sách thành công!");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi: {ex.Message}");
+            }
+        }
+
+        // Lấy thông tin 1 sách để sửa
+        public SachRow? GetSachById(string maSach)
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            var sql = @"
+        SELECT s.maSACH, s.TenSach, s.GiaSach, s.NamXB, s.DaAn,
+               s.maNXB, n.TenNXB,
+               (SELECT COUNT(*) FROM CUONSACH c WHERE c.maSACH=s.maSACH AND c.DaAn=0) AS TongCuon,
+               (SELECT COUNT(*) FROM CUONSACH c WHERE c.maSACH=s.maSACH AND c.TinhTrang=1 AND c.DaAn=0) AS ConLai,
+               (SELECT LISTAGG(tg.HoTenTG,', ') FROM TACGIA_SACH ts JOIN TACGIA tg ON ts.maTG=tg.maTG WHERE ts.maSACH=s.maSACH) AS TacGia,
+               (SELECT LISTAGG(tl.TenTL,', ')  FROM THELOAI_SACH tls JOIN THELOAI tl ON tls.MaTL=tl.MaTL WHERE tls.maSACH=s.maSACH) AS TheLoai
+        FROM SACH s LEFT JOIN NHAXUATBAN n ON s.maNXB=n.maNXB
+        WHERE s.maSACH = :maSach";
+            using var cmd = new OracleCommand(sql, conn);
+            cmd.Parameters.Add("maSach", maSach);
+            using var r = cmd.ExecuteReader();
+            if (!r.Read()) return null;
+            return new SachRow
+            {
+                MaSach = r["maSACH"].ToString()!,
+                TenSach = r["TenSach"].ToString()!,
+                GiaSach = r["GiaSach"] == DBNull.Value ? 0 : Convert.ToInt64(r["GiaSach"]),
+                NamXB = r["NamXB"] == DBNull.Value ? 0 : Convert.ToInt32(r["NamXB"]),
+                TenNXB = r["TenNXB"].ToString()!,
+                TacGia = r["TacGia"].ToString()!,
+                TheLoai = r["TheLoai"].ToString()!,
+                TongCuon = Convert.ToInt32(r["TongCuon"]),
+                ConLai = Convert.ToInt32(r["ConLai"]),
+                DaAn = Convert.ToInt32(r["DaAn"]) == 1,
+                MaNXB = r["maNXB"].ToString()!,
+            };
+        }
         // ═══════════════════════════════════════
         // NHÀ XUẤT BẢN
         // ═══════════════════════════════════════
@@ -307,7 +481,6 @@ namespace LibraryOS.Services
         {
             using var conn = new OracleConnection(_conn);
             conn.Open();
-            using var tran = conn.BeginTransaction();
             try
             {
                 // Kiểm tra có cuốn đang mượn không
@@ -320,44 +493,30 @@ namespace LibraryOS.Services
 
                 using (var cmd = new OracleCommand(sqlCheck, conn))
                 {
-                    cmd.Transaction = tran;
                     cmd.Parameters.Add("maSach", maSach);
                     var soLuong = Convert.ToInt32(cmd.ExecuteScalar());
                     if (soLuong > 0)
                         return (false, $"Không thể xóa! Đang có {soLuong} cuốn của sách này được mượn.");
                 }
 
-                // Xóa CT_PHIEUMUON liên quan
-                Execute(conn, tran, @"
-            DELETE FROM CT_PHIEUMUON
-            WHERE MaCuonSach IN (
-                SELECT MaCuonSach FROM CUONSACH WHERE maSACH = :p
-            )", maSach);
+                // Xóa mềm: ẩn sách + tất cả cuốn
+                using (var cmd = new OracleCommand(
+                    "UPDATE SACH SET DaAn = 1 WHERE maSACH = :maSach", conn))
+                {
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
+                using (var cmd = new OracleCommand(
+                    "UPDATE CUONSACH SET DaAn = 1 WHERE maSACH = :maSach", conn))
+                {
+                    cmd.Parameters.Add("maSach", maSach);
+                    cmd.ExecuteNonQuery();
+                }
 
-                // Xóa CUONSACH
-                Execute(conn, tran,
-                    "DELETE FROM CUONSACH WHERE maSACH = :p", maSach);
-
-                // Xóa THELOAI_SACH
-                Execute(conn, tran,
-                    "DELETE FROM THELOAI_SACH WHERE maSACH = :p", maSach);
-
-                // Xóa SACH TRƯỚC  ← trigger sẽ thấy sách không còn → bỏ qua kiểm tra
-                Execute(conn, tran,
-                    "DELETE FROM SACH WHERE maSACH = :p", maSach);
-
-                // Xóa TACGIA_SACH SAU ← trigger kiểm tra SACH đã xóa → bỏ qua
-                Execute(conn, tran,
-                    "DELETE FROM TACGIA_SACH WHERE maSACH = :p", maSach);
-
-                tran.Commit();
                 return (true, "Xóa sách thành công!");
             }
             catch (OracleException ex)
             {
-                tran.Rollback();
-                if (ex.Message.Contains("20002") || ex.Message.Contains("20003"))
-                    return (false, "Không thể xóa! Đang có cuốn được mượn.");
                 return (false, $"Lỗi: {ex.Message}");
             }
         }

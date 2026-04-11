@@ -35,7 +35,7 @@
             <div class="pt">Danh mục sách</div>
             <div class="ps">SACH · CUONSACH · @Model.Count đầu sách</div>
         </div>
-        <button class="btn b-blue btn-sm" onclick="moModal()">+ Thêm sách</button>
+        <button class="btn b-blue btn-sm" onclick="moModalThem()">+ Thêm sách</button>
     </div>
     <form method="get" asp-action="Sach">
         <div class="tsearch">
@@ -81,34 +81,67 @@
             <tbody>
                 @foreach (var s in Model)
                 {
-                    <tr>
-                        <td class="mo" style="color:#a78bfa">@s.MaSach</td>
-                        <td>
-                            <div style="font-weight:500">@s.TenSach</div>
-                            <div style="font-size:10px;color:var(--txt-muted);font-family:var(--mono)">@s.TheLoai</div>
+                    <tr style="@(s.DaAn ? "opacity:0.4;" : "")">
+                        <td class="mo" style="color:@(s.DaAn ? "var(--txt-muted)" : "#a78bfa")">
+                            @if (s.DaAn)
+                            {
+                                <del>@s.MaSach</del>
+                            }
+                            else
+                            {
+                                @s.MaSach
+                            }
                         </td>
-                        <td style="font-size:12px;color:var(--txt-secondary)">@s.TacGia</td>
-                        <td style="font-size:11px;color:var(--txt-secondary)">@s.TenNXB</td>
-                        <td class="mo">@s.NamXB</td>
-                        <td class="mo">@s.GiaSach.ToString("N0")đ</td>
-                        <td class="mo">@s.TongCuon</td>
                         <td>
-                            <span class="pill @(s.ConLai == 0 ? "p-rose" : s.ConLai <= 1 ? "p-amber" : "p-teal")">
-                                @s.ConLai cuốn
-                            </span>
+                            <div style="font-weight:500;@(s.DaAn ? "text-decoration:line-through;color:var(--txt-muted)" : "")">
+                                @s.TenSach
+                            </div>
+                            <div style="font-size:10px;font-family:var(--mono);color:var(--txt-muted)">
+                                @s.TheLoai
+                                @if (s.DaAn)
+                                {
+                                    <span class="pill p-rose" style="margin-left:6px;font-size:9px">Đã xóa</span>
+                                }
+                            </div>
                         </td>
-                        <td style="white-space:nowrap">                          
-                            <button class="btn b-ghost btn-sm"
-                                    style="margin-left:4px"
-                                    title="Sửa sách">
-                                Sửa
-                            </button>
-                            <button class="btn b-ghost btn-sm"
-                                    style="color:#f06292;margin-left:4px"
-                                    onclick="xoaSach('@s.MaSach', '@s.TenSach')"
-                                    title="Xóa sách">
-                                Xóa
-                            </button>
+                        <td style="color:var(--txt-secondary);font-size:12px;@(s.DaAn ? "opacity:.5" : "")">@s.TacGia</td>
+                        <td style="color:var(--txt-secondary);font-size:11px;@(s.DaAn ? "opacity:.5" : "")">@s.TenNXB</td>
+                        <td class="mo" style="@(s.DaAn ? "opacity:.5" : "")">@s.NamXB</td>
+                        <td class="mo" style="@(s.DaAn ? "opacity:.5" : "")">@s.GiaSach.ToString("N0")đ</td>
+                        <td class="mo" style="@(s.DaAn ? "opacity:.5" : "")">@s.TongCuon</td>
+                        <td>
+                            @if (s.DaAn)
+                            {
+                                <span class="pill p-muted">Đã xóa</span>
+                            }
+                            else
+                            {
+                                <span class="pill @(s.ConLai == 0 ? "p-rose" : s.ConLai <= 1 ? "p-amber" : "p-teal")">
+                                    @s.ConLai cuốn
+                                </span>
+                            }
+                        </td>
+                        <td style="white-space:nowrap">
+                            @if (!s.DaAn)
+                            {
+                                <button class="btn b-ghost btn-sm"
+                                        onclick="moModalSua('@s.MaSach')">
+                                    Sửa
+                                </button>
+                                <button class="btn b-ghost btn-sm"
+                                        style="color:#f06292;margin-left:4px"
+                                        onclick="xoaSach('@s.MaSach', '@s.TenSach')">
+                                    Xóa
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn b-ghost btn-sm"
+                                        style="color:#2dd4a6"
+                                        onclick="khoiPhuc('@s.MaSach')">
+                                    Khôi phục
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -211,12 +244,225 @@
         </div>
     </div>
 </div>
+<!-- Modal thêm sách -->
+<div id="modal-them" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:540px;overflow:hidden;max-height:90vh;overflow-y:auto">
+        <div class="ph">
+            <div class="pt">Thêm sách mới</div>
+            <button onclick="dongModal('modal-them')" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã sách *</label>
+                <input class="finp" id="them-masach" placeholder="VD: S013">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Năm xuất bản *</label>
+                <input class="finp" id="them-namxb" type="number" placeholder="2024">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+                <label class="flbl">Tên sách *</label>
+                <input class="finp" id="them-tensach" placeholder="Tên đầy đủ của sách">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Giá sách (đ) *</label>
+                <input class="finp" id="them-gia" type="number" placeholder="100000">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Số cuốn nhập *</label>
+                <input class="finp" id="them-soluong" type="number" placeholder="1" min="1" value="1">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Nhà xuất bản *</label>
+                <select class="finp" id="them-nxb">
+                    @foreach (var n in (ViewBag.DsNXB as List<LibraryOS.Models.NhaXuatBanRow> ?? new()))
+                    {
+                        <option value="@n.MaNXB">@n.TenNXB</option>
+                    }
+                </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Thể loại</label>
+                <select class="finp" id="them-tl">
+                    <option value="">-- Chọn thể loại --</option>
+                    @foreach (var tl in (ViewBag.DsTheLoai as List<LibraryOS.Models.TheLoaiRow> ?? new()))
+                    {
+                        <option value="@tl.MaTL">@tl.TenTL</option>
+                    }
+                </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Tác giả</label>
+                <select class="finp" id="them-tg">
+                    <option value="">-- Chọn tác giả --</option>
+                    @foreach (var tg in (ViewBag.DsTacGia as List<LibraryOS.Models.TacGiaRow> ?? new()))
+                    {
+                        <option value="@tg.MaTG">@tg.HoTenTG</option>
+                    }
+                </select>
+            </div>
+            <div id="them-tb" style="display:none;font-size:12px;padding:8px 12px;border-radius:var(--r-sm);grid-column:1/-1"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;grid-column:1/-1">
+                <button onclick="dongModal('modal-them')" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue" onclick="submitThemSach()">Lưu sách</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal sửa sách -->
+<div id="modal-sua" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;align-items:center;justify-content:center">
+    <div style="background:var(--bg-surface);border:1px solid var(--border-md);border-radius:var(--r-lg);width:540px;overflow:hidden">
+        <div class="ph">
+            <div class="pt">Sửa sách</div>
+            <button onclick="dongModal('modal-sua')" style="background:none;border:none;color:var(--txt-muted);cursor:pointer;font-size:18px">✕</button>
+        </div>
+        <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Mã sách</label>
+                <input class="finp" id="sua-masach" disabled style="opacity:.5">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Năm xuất bản</label>
+                <input class="finp" id="sua-namxb" type="number">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
+                <label class="flbl">Tên sách</label>
+                <input class="finp" id="sua-tensach">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Giá sách (đ)</label>
+                <input class="finp" id="sua-gia" type="number">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+                <label class="flbl">Nhà xuất bản</label>
+                <select class="finp" id="sua-nxb">
+                    @foreach (var n in (ViewBag.DsNXB as List<LibraryOS.Models.NhaXuatBanRow> ?? new()))
+                    {
+                        <option value="@n.MaNXB">@n.TenNXB</option>
+                    }
+                </select>
+            </div>
+            <div id="sua-tb" style="display:none;font-size:12px;padding:8px 12px;border-radius:var(--r-sm);grid-column:1/-1"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;grid-column:1/-1">
+                <button onclick="dongModal('modal-sua')" class="btn b-ghost">Hủy</button>
+                <button class="btn b-blue" onclick="submitSuaSach()">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
     <script>
-        // ── Xóa sách ────────────────────────────────────
+        function moModal(id)  { document.getElementById(id).style.display = 'flex'; }
+        function dongModal(id){ document.getElementById(id).style.display = 'none'; }
+
+        function moModalThem() {
+            ['them-masach','them-tensach','them-gia','them-namxb'].forEach(id =>
+                document.getElementById(id).value = '');
+            document.getElementById('them-soluong').value = '1';
+            document.getElementById('them-tb').style.display = 'none';
+            moModal('modal-them');
+        }
+
+        function hienTB(idTB, ok, msg) {
+            const tb = document.getElementById(idTB);
+            tb.style.display    = 'block';
+            tb.style.background = ok ? 'rgba(45,212,166,0.1)' : 'rgba(240,98,146,0.1)';
+            tb.style.color      = ok ? 'var(--accent-teal)'   : 'var(--accent-rose)';
+            tb.style.border     = ok ? '1px solid rgba(45,212,166,0.2)' : '1px solid rgba(240,98,146,0.2)';
+            tb.textContent      = (ok ? '✅ ' : '❌ ') + msg;
+        }
+
+        // ── Thêm sách ────────────────────────────────────
+        async function submitThemSach() {
+            const maSach  = document.getElementById('them-masach').value.trim();
+            const tenSach = document.getElementById('them-tensach').value.trim();
+            const gia     = document.getElementById('them-gia').value;
+            const namXB   = document.getElementById('them-namxb').value;
+            const maNXB   = document.getElementById('them-nxb').value;
+            const maTL    = document.getElementById('them-tl').value;
+            const maTG    = document.getElementById('them-tg').value;
+            const soLuong = document.getElementById('them-soluong').value;
+
+            if (!maSach || !tenSach || !gia || !namXB || !maNXB) {
+                hienTB('them-tb', false, 'Vui lòng nhập đầy đủ các trường bắt buộc (*)!');
+                return;
+            }
+
+            const body = new URLSearchParams({
+                maSach, tenSach, giaSach: gia, namXB, maNXB, maTL, maTG, soLuong
+            });
+            const res  = await fetch('/QuanLy/ThemSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+            const data = await res.json();
+            hienTB('them-tb', data.ok, data.msg);
+            if (data.ok) setTimeout(() => window.location.reload(), 800);
+        }
+
+        // ── Sửa sách ─────────────────────────────────────
+        async function moModalSua(maSach) {
+            document.getElementById('sua-tb').style.display = 'none';
+
+            const res  = await fetch(`/QuanLy/GetSachById?maSach=${maSach}`);
+            const data = await res.json();
+
+            if (!data.ok) { alert('Không lấy được thông tin sách!'); return; }
+
+            document.getElementById('sua-masach').value  = data.maSach;
+            document.getElementById('sua-tensach').value = data.tenSach;
+            document.getElementById('sua-gia').value     = data.giaSach;
+            document.getElementById('sua-namxb').value   = data.namXB;
+            document.getElementById('sua-nxb').value     = data.maNXB;
+
+            moModal('modal-sua');
+        }
+
+        async function submitSuaSach() {
+            const maSach  = document.getElementById('sua-masach').value;
+            const tenSach = document.getElementById('sua-tensach').value.trim();
+            const gia     = document.getElementById('sua-gia').value;
+            const namXB   = document.getElementById('sua-namxb').value;
+            const maNXB   = document.getElementById('sua-nxb').value;
+
+            if (!tenSach || !gia || !namXB) {
+                hienTB('sua-tb', false, 'Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+
+            const body = new URLSearchParams({ maSach, tenSach, giaSach: gia, namXB, maNXB });
+            const res  = await fetch('/QuanLy/SuaSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            });
+            const data = await res.json();
+            hienTB('sua-tb', data.ok, data.msg);
+            if (data.ok) setTimeout(() => window.location.reload(), 800);
+        }
+
+        // ── Xóa sách ─────────────────────────────────────
         async function xoaSach(maSach, tenSach) {
-            if (!confirm(`Xóa sách "${tenSach}"?\nThao tác này không thể hoàn tác!`)) return;
+            if (!confirm(`Xóa sách "${tenSach}"?`)) return;
             const res  = await fetch('/QuanLy/XoaSach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maSach=${encodeURIComponent(maSach)}`
+            });
+            const data = await res.json();
+            if (data.ok) {
+                setTimeout(() => window.location.reload(), 400);
+            } else {
+                alert('❌ ' + data.msg);
+            }
+        }
+
+        // ── Khôi phục sách ───────────────────────────────
+        async function khoiPhuc(maSach) {
+            if (!confirm(`Khôi phục sách ${maSach}?`)) return;
+            const res  = await fetch('/QuanLy/KhoiPhucSach', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `maSach=${encodeURIComponent(maSach)}`
@@ -224,95 +470,6 @@
             const data = await res.json();
             alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
             if (data.ok) window.location.reload();
-        }
-
-        // ── Modal sách ───────────────────────────────────
-        function moModal()  { document.getElementById('modal-overlay').style.display = 'flex'; }
-        function dongModal(){ document.getElementById('modal-overlay').style.display = 'none'; }
-
-        // ── Modal tác giả ────────────────────────────────
-        let currentMaSach = '';
-
-        async function moModalTacGia(maSach, tenSach) {
-            currentMaSach = maSach;
-            document.getElementById('tg-modal-title').textContent = 'Tác giả của sách';
-            document.getElementById('tg-modal-sub').textContent   = tenSach;
-            document.getElementById('tg-thongbao').style.display  = 'none';
-            document.getElementById('modal-tacgia').style.display = 'flex';
-            await loadTacGia();
-        }
-
-        function dongModalTacGia() {
-            document.getElementById('modal-tacgia').style.display = 'none';
-        }
-
-        async function loadTacGia() {
-            const res  = await fetch(`/QuanLy/GetTacGiaCuaSach?maSach=${currentMaSach}`);
-            const data = await res.json();
-
-            // Render tác giả hiện tại
-            const container = document.getElementById('ds-tacgia-hientai');
-            if (data.tacGiaCuaSach.length === 0) {
-                container.innerHTML = '<span style="color:var(--txt-muted);font-size:12px">Chưa có tác giả</span>';
-            } else {
-                container.innerHTML = data.tacGiaCuaSach.map(tg => `
-                    <div style="display:inline-flex;align-items:center;gap:6px;
-                                background:var(--bg-raised);border:1px solid var(--border-md);
-                                border-radius:20px;padding:4px 10px 4px 12px;font-size:12px">
-                        <span>${tg.hoTenTG}</span>
-                        <button onclick="xoaTacGia('${tg.maTG}')"
-                                style="background:none;border:none;color:var(--txt-muted);
-                                       cursor:pointer;font-size:14px;line-height:1;padding:0"
-                                title="Xóa tác giả này">×</button>
-                    </div>`).join('');
-            }
-
-            // Render dropdown thêm tác giả
-            const sel = document.getElementById('sel-tacgia');
-            const daCoMaTG = data.tacGiaCuaSach.map(t => t.maTG);
-            const chuaCo   = data.tatCaTacGia.filter(t => !daCoMaTG.includes(t.maTG));
-            if (chuaCo.length === 0) {
-                sel.innerHTML = '<option value="">-- Đã liên kết tất cả --</option>';
-            } else {
-                sel.innerHTML = chuaCo.map(t =>
-                    `<option value="${t.maTG}">${t.maTG} — ${t.hoTenTG}</option>`
-                ).join('');
-            }
-        }
-
-        async function xoaTacGia(maTG) {
-            const res  = await fetch('/QuanLy/XoaTacGiaKhoiSach', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `maTG=${encodeURIComponent(maTG)}&maSach=${encodeURIComponent(currentMaSach)}`
-            });
-            const data = await res.json();
-
-            const tb = document.getElementById('tg-thongbao');
-            tb.style.display = 'block';
-            tb.style.color   = data.ok ? 'var(--accent-teal)' : 'var(--accent-rose)';
-            tb.textContent   = (data.ok ? '✅ ' : '❌ ') + data.msg;
-
-            if (data.ok) await loadTacGia();
-        }
-
-        async function themTacGia() {
-            const maTG = document.getElementById('sel-tacgia').value;
-            if (!maTG) return;
-
-            const res  = await fetch('/QuanLy/ThemTacGiaVaoSach', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `maTG=${encodeURIComponent(maTG)}&maSach=${encodeURIComponent(currentMaSach)}`
-            });
-            const data = await res.json();
-
-            const tb = document.getElementById('tg-thongbao');
-            tb.style.display = 'block';
-            tb.style.color   = data.ok ? 'var(--accent-teal)' : 'var(--accent-rose)';
-            tb.textContent   = (data.ok ? '✅ ' : '❌ ') + data.msg;
-
-            if (data.ok) await loadTacGia();
         }
     </script>
 }

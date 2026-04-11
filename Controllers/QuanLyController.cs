@@ -35,6 +35,8 @@ namespace LibraryOS.Controllers
             ViewBag.Keyword = kw;
             ViewBag.MaTL = maTL;
             ViewBag.DsTheLoai = _ql.GetTheLoai();
+            ViewBag.DsNXB = _ql.GetNhaXuatBan(); // ← thêm
+            ViewBag.DsTacGia = _ql.GetTacGia();      // ← thêm
             return View(_ql.GetSach(kw, maTL));
         }
 
@@ -198,6 +200,44 @@ namespace LibraryOS.Controllers
         {
             var (ok, msg) = _ql.SuaTacGia(maTG, hoTenTG);
             return Json(new { ok, msg });
+        }
+        [HttpPost]
+        public IActionResult KhoiPhucSach(string maSach)
+        {
+            var (ok, msg) = _ql.KhoiPhucSach(maSach);
+            return Json(new { ok, msg });
+        }
+
+        [HttpPost]
+        public IActionResult ThemSach(string maSach, string tenSach, long giaSach,
+            int namXB, string maNXB, string maTL, string maTG, int soLuong)
+        {
+            var (ok, msg) = _ql.ThemSach(maSach, tenSach, giaSach, namXB, maNXB, maTL, maTG, soLuong);
+            return Json(new { ok, msg });
+        }
+
+        [HttpPost]
+        public IActionResult SuaSach(string maSach, string tenSach, long giaSach,
+            int namXB, string maNXB)
+        {
+            var (ok, msg) = _ql.SuaSach(maSach, tenSach, giaSach, namXB, maNXB);
+            return Json(new { ok, msg });
+        }
+
+        [HttpGet]
+        public IActionResult GetSachById(string maSach)
+        {
+            var s = _ql.GetSachById(maSach);
+            if (s == null) return Json(new { ok = false });
+            return Json(new
+            {
+                ok = true,
+                s.MaSach,
+                s.TenSach,
+                s.GiaSach,
+                s.NamXB,
+                s.MaNXB
+            });
         }
     }
 }
