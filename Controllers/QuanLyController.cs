@@ -12,12 +12,14 @@ namespace LibraryOS.Controllers
         private readonly DashboardService _dashboard;
         private readonly PhieuMuonService _phieuMuon;
         private readonly QuanLyService _ql;
+        private readonly ThuThuService _tt;
 
-        public QuanLyController(DashboardService dashboard, PhieuMuonService phieuMuon, QuanLyService ql)
+        public QuanLyController(DashboardService dashboard, PhieuMuonService phieuMuon, QuanLyService ql, ThuThuService tt)
         {
             _dashboard = dashboard;
             _phieuMuon = phieuMuon;
             _ql = ql;
+            _tt = tt;
         }
 
         public IActionResult NhanVien(string? kw = null)
@@ -238,6 +240,28 @@ namespace LibraryOS.Controllers
                 s.NamXB,
                 s.MaNXB
             });
+        }
+        public IActionResult PhieuPhat(string? trangThai = null, string? maPM = null)
+        {
+            ViewData["Title"] = "Phiếu phạt";
+            ViewData["ActiveMenu"] = "phieuphat";
+            ViewBag.TrangThai = trangThai ?? "";
+            ViewBag.MaPMParam = maPM ?? "";
+            return View("~/Views/ThuThu/PhieuPhat.cshtml", _tt.GetPhieuPhat(trangThai));
+        }
+
+        [HttpPost]
+        public IActionResult LapPhieuPhat(string maPM, string lyDo, long soTien)
+        {
+            var (ok, msg) = _tt.LapPhieuPhat(maPM, lyDo, soTien);
+            return Json(new { ok, msg });
+        }
+
+        [HttpPost]
+        public IActionResult ThuTienPhat(string maPP)
+        {
+            var (ok, msg) = _tt.ThuTienPhat(maPP);
+            return Json(new { ok, msg });
         }
     }
 }

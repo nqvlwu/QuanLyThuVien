@@ -21,31 +21,32 @@ namespace LibraryOS.Services
             conn.Open();
 
             var sql = @"
-                SELECT s.maSACH, s.TenSach, s.GiaSach, s.NamXB,
-                       n.TenNXB,
-                       (SELECT COUNT(*) FROM CUONSACH c
-                        WHERE c.maSACH = s.maSACH AND c.DaAn = 0) AS TongCuon,
-                       (SELECT COUNT(*) FROM CUONSACH c
-                        WHERE c.maSACH = s.maSACH
-                          AND c.TinhTrang = 1 AND c.DaAn = 0) AS ConLai,
-                       (SELECT LISTAGG(tg.HoTenTG, ', ')
-                        FROM TACGIA_SACH ts JOIN TACGIA tg ON ts.maTG = tg.maTG
-                        WHERE ts.maSACH = s.maSACH) AS TacGia,
-                       (SELECT LISTAGG(tl.TenTL, ', ')
-                        FROM THELOAI_SACH tls JOIN THELOAI tl ON tls.MaTL = tl.MaTL
-                        WHERE tls.maSACH = s.maSACH) AS TheLoai
-                FROM SACH s
-                LEFT JOIN NHAXUATBAN n ON s.maNXB = n.maNXB
-                WHERE (:kw IS NULL
-                   OR LOWER(s.TenSach) LIKE '%'||LOWER(:kw)||'%'
-                   OR LOWER(s.maSACH)  LIKE '%'||LOWER(:kw)||'%')
-                AND (:maTL IS NULL OR EXISTS (
-                    SELECT 1 FROM THELOAI_SACH tls
-                    WHERE tls.maSACH = s.maSACH AND tls.MaTL = :maTL))
-                AND (:maTG IS NULL OR EXISTS (
-                    SELECT 1 FROM TACGIA_SACH ts
-                    WHERE ts.maSACH = s.maSACH AND ts.maTG = :maTG))
-                ORDER BY s.TenSach";
+        SELECT s.maSACH, s.TenSach, s.GiaSach, s.NamXB,
+               n.TenNXB,
+               (SELECT COUNT(*) FROM CUONSACH c
+                WHERE c.maSACH = s.maSACH AND c.DaAn = 0) AS TongCuon,
+               (SELECT COUNT(*) FROM CUONSACH c
+                WHERE c.maSACH = s.maSACH
+                  AND c.TinhTrang = 1 AND c.DaAn = 0) AS ConLai,
+               (SELECT LISTAGG(tg.HoTenTG, ', ')
+                FROM TACGIA_SACH ts JOIN TACGIA tg ON ts.maTG = tg.maTG
+                WHERE ts.maSACH = s.maSACH) AS TacGia,
+               (SELECT LISTAGG(tl.TenTL, ', ')
+                FROM THELOAI_SACH tls JOIN THELOAI tl ON tls.MaTL = tl.MaTL
+                WHERE tls.maSACH = s.maSACH) AS TheLoai
+        FROM SACH s
+        LEFT JOIN NHAXUATBAN n ON s.maNXB = n.maNXB
+        WHERE NVL(s.DaAn, 0) = 0   -- ← chỉ lấy sách chưa bị xóa
+        AND (:kw IS NULL
+           OR LOWER(s.TenSach) LIKE '%'||LOWER(:kw)||'%'
+           OR LOWER(s.maSACH)  LIKE '%'||LOWER(:kw)||'%')
+        AND (:maTL IS NULL OR EXISTS (
+            SELECT 1 FROM THELOAI_SACH tls
+            WHERE tls.maSACH = s.maSACH AND tls.MaTL = :maTL))
+        AND (:maTG IS NULL OR EXISTS (
+            SELECT 1 FROM TACGIA_SACH ts
+            WHERE ts.maSACH = s.maSACH AND ts.maTG = :maTG))
+        ORDER BY s.TenSach";
 
             using var cmd = new OracleCommand(sql, conn);
             cmd.Parameters.Add("kw", (object?)kw ?? DBNull.Value);
@@ -71,7 +72,6 @@ namespace LibraryOS.Services
                 });
             return list;
         }
-
         // ═══════════════════════════════════════
         // THỂ LOẠI
         // ═══════════════════════════════════════
@@ -81,11 +81,14 @@ namespace LibraryOS.Services
             using var conn = new OracleConnection(_conn);
             conn.Open();
             var sql = @"
-                SELECT tl.MaTL, tl.TenTL, COUNT(tls.maSACH) AS SoSach
-                FROM THELOAI tl
-                LEFT JOIN THELOAI_SACH tls ON tls.MaTL = tl.MaTL
-                GROUP BY tl.MaTL, tl.TenTL
-                ORDER BY tl.MaTL";
+        SELECT tl.MaTL, tl.TenTL,
+               COUNT(tls.maSACH) AS SoSach
+        FROM THELOAI tl
+        LEFT JOIN THELOAI_SACH tls ON tls.MaTL = tl.MaTL
+        LEFT JOIN SACH s ON tls.maSACH = s.maSACH
+                        AND NVL(s.DaAn, 0) = 0   -- ← chỉ đếm sách chưa xóa
+        GROUP BY tl.MaTL, tl.TenTL
+        ORDER BY tl.MaTL";
             using var cmd = new OracleCommand(sql, conn);
             using var r = cmd.ExecuteReader();
             while (r.Read())
@@ -97,7 +100,6 @@ namespace LibraryOS.Services
                 });
             return list;
         }
-
         // ═══════════════════════════════════════
         // TÁC GIẢ
         // ═══════════════════════════════════════
