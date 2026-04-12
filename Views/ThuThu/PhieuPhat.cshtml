@@ -193,31 +193,6 @@
             if (map[lyDo])
                 document.getElementById('phat-sotien').value = map[lyDo];
         }
-
-                async function submitLapPhat() {
-            const maPM   = document.getElementById('phat-mapm').value.trim();
-            const lyDo   = document.getElementById('phat-lydo').value;
-            const soTien = document.getElementById('phat-sotien').value;
-            const tb     = document.getElementById('phat-tb');
-
-            if (!maPM || !lyDo || !soTien) {
-                hienTB('phat-tb', false, 'Vui lòng nhập đầy đủ thông tin!');
-                return;
-            }
-
-            // ← tự detect controller
-            const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
-
-            const res  = await fetch(`/${controller}/LapPhieuPhat`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `maPM=${encodeURIComponent(maPM)}&lyDo=${encodeURIComponent(lyDo)}&soTien=${soTien}`
-            });
-            const data = await res.json();
-            hienTB('phat-tb', data.ok, data.msg);
-            if (data.ok) setTimeout(() => window.location.reload(), 800);
-        }
-
         async function thuTien(maPP) {
             if (!confirm(`Thu tiền phạt phiếu ${maPP}?`)) return;
 
@@ -231,6 +206,45 @@
             const data = await res.json();
             alert(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
             if (data.ok) window.location.reload();
+        }
+                async function submitLapPhat() {
+            const maPM   = document.getElementById('phat-mapm').value.trim();
+            const lyDo   = document.getElementById('phat-lydo').value;
+            const soTien = document.getElementById('phat-sotien').value;
+            const tb     = document.getElementById('phat-tb');
+
+            if (!maPM || !lyDo || !soTien) {
+                tb.style.display    = 'block';
+                tb.style.background = 'rgba(240,98,146,0.1)';
+                tb.style.color      = 'var(--accent-rose)';
+                tb.style.border     = '1px solid rgba(240,98,146,0.2)';
+                tb.textContent      = '❌ Vui lòng nhập đầy đủ thông tin!';
+                return;
+            }
+
+            const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
+
+            const res  = await fetch(`/${controller}/LapPhieuPhat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `maPM=${encodeURIComponent(maPM)}&lyDo=${encodeURIComponent(lyDo)}&soTien=${soTien}`
+            });
+            const data = await res.json();
+
+            // Hiện thông báo trong modal
+            tb.style.display    = 'block';
+            tb.style.background = data.ok ? 'rgba(45,212,166,0.1)'  : 'rgba(240,98,146,0.1)';
+            tb.style.color      = data.ok ? 'var(--accent-teal)'    : 'var(--accent-rose)';
+            tb.style.border     = data.ok ? '1px solid rgba(45,212,166,0.2)' : '1px solid rgba(240,98,146,0.2)';
+            tb.textContent      = (data.ok ? '✅ ' : '❌ ') + data.msg;
+
+            if (data.ok) {
+                // Đóng modal sau 1 giây rồi reload
+                setTimeout(() => {
+                    document.getElementById('modal-phat').style.display = 'none';
+                    window.location.reload();
+                }, 1000);
+            }
         }
     </script>
 }
