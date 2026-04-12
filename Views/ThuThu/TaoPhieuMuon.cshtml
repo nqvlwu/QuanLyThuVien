@@ -200,22 +200,25 @@ let soChon = @Model.DanhSachCuonSach.Count;
 
 // Kiểm tra thẻ realtime (debounce 500ms)
 let timeout;
-function kiemTraThe(soTheTV) {
-    const info = document.getElementById('the-info');
-    const tenDG = document.getElementById('ten-dg');
-    if (!soTheTV || soTheTV.length < 5) { info.style.display = 'none'; return; }
+        async function kiemTraThe(soTheTV) {
+            const info  = document.getElementById('the-info');
+            const tenDG = document.getElementById('ten-dg');
+            if (!soTheTV || soTheTV.length < 5) { info.style.display = 'none'; return; }
 
-    clearTimeout(timeout);
-    timeout = setTimeout(async () => {
-        const res  = await fetch(`/ThuThu/KiemTraThe?soTheTV=${soTheTV}`);
-        const data = await res.json();
+            clearTimeout(timeout);
+            timeout = setTimeout(async () => {
+                // Tự detect controller theo URL hiện tại
+                const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
 
-        info.style.display = 'flex';
-        info.className     = `the-info ${data.hopLe ? 'the-ok' : 'the-err'}`;
-        tenDG.textContent  = data.hoTen;
-        info.querySelector('.the-icon').textContent = data.hopLe ? '✓' : '✗';
-    }, 500);
-}
+                const res  = await fetch(`/${controller}/KiemTraThe?soTheTV=${soTheTV}`);
+                const data = await res.json();
+
+                info.style.display = 'flex';
+                info.className     = `the-info ${data.hopLe ? 'the-ok' : 'the-err'}`;
+                document.querySelector('.the-icon').textContent = data.hopLe ? '✓' : '✗';
+                document.getElementById('ten-dg').textContent  = data.hoTen;
+            }, 500);
+        }
 
 // Lọc sách theo từ khóa
 function locSach(keyword) {

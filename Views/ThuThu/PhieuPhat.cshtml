@@ -194,38 +194,36 @@
                 document.getElementById('phat-sotien').value = map[lyDo];
         }
 
-        async function submitLapPhat() {
+                async function submitLapPhat() {
             const maPM   = document.getElementById('phat-mapm').value.trim();
             const lyDo   = document.getElementById('phat-lydo').value;
             const soTien = document.getElementById('phat-sotien').value;
             const tb     = document.getElementById('phat-tb');
 
             if (!maPM || !lyDo || !soTien) {
-                tb.style.display    = 'block';
-                tb.style.background = 'rgba(240,98,146,0.1)';
-                tb.style.color      = 'var(--accent-rose)';
-                tb.textContent      = '❌ Vui lòng nhập đầy đủ thông tin!';
+                hienTB('phat-tb', false, 'Vui lòng nhập đầy đủ thông tin!');
                 return;
             }
 
-            const res  = await fetch('/ThuThu/LapPhieuPhat', {
+            // ← tự detect controller
+            const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
+
+            const res  = await fetch(`/${controller}/LapPhieuPhat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `maPM=${encodeURIComponent(maPM)}&lyDo=${encodeURIComponent(lyDo)}&soTien=${soTien}`
             });
             const data = await res.json();
-
-            tb.style.display    = 'block';
-            tb.style.background = data.ok ? 'rgba(45,212,166,0.1)' : 'rgba(240,98,146,0.1)';
-            tb.style.color      = data.ok ? 'var(--accent-teal)'   : 'var(--accent-rose)';
-            tb.textContent      = (data.ok ? '✅ ' : '❌ ') + data.msg;
-
+            hienTB('phat-tb', data.ok, data.msg);
             if (data.ok) setTimeout(() => window.location.reload(), 800);
         }
 
         async function thuTien(maPP) {
             if (!confirm(`Thu tiền phạt phiếu ${maPP}?`)) return;
-            const res  = await fetch('/ThuThu/ThuTienPhat', {
+
+            const controller = window.location.pathname.includes('QuanLy') ? 'QuanLy' : 'ThuThu';
+
+            const res  = await fetch(`/${controller}/ThuTienPhat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `maPP=${encodeURIComponent(maPP)}`
