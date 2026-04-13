@@ -30,14 +30,19 @@ namespace LibraryOS.Services
 
             // Phiếu mượn gần đây
             var sql1 = @"
-                SELECT pm.maPM, pm.SoTheTV, ttv.HoTenDG,
-                       TO_CHAR(pm.NgayMuon,'DD/MM/YYYY') AS NgayMuon,
-                       pm.TinhTrang,
-                       (SELECT COUNT(*) FROM CT_PHIEUMUON c WHERE c.maPM = pm.maPM) AS SoCuon
-                FROM PHIEUMUON pm
-                LEFT JOIN THETHUVIEN ttv ON pm.SoTheTV = ttv.SoTheTV
-                ORDER BY pm.NgayMuon DESC
-                FETCH FIRST 5 ROWS ONLY";
+    SELECT pm.maPM, pm.SoTheTV, ttv.HoTenDG,
+           TO_CHAR(pm.NgayMuon,'DD/MM/YYYY') AS NgayMuon,
+           pm.TinhTrang,
+           (SELECT COUNT(*) FROM CT_PHIEUMUON c WHERE c.maPM = pm.maPM) AS SoCuon,
+           CASE WHEN pm.TinhTrang = N'Quá hạn' THEN 1 ELSE 0 END AS IsQuaHan,
+           (SELECT COUNT(*) FROM PHIEUPHAT pp
+            WHERE pp.maPM = pm.maPM
+              AND pp.TrangThai = N'Chưa thu') AS DaCoPhieuPhat
+    FROM PHIEUMUON pm
+    LEFT JOIN THETHUVIEN ttv ON pm.SoTheTV = ttv.SoTheTV
+    WHERE pm.TinhTrang IN (N'Đang mượn', N'Quá hạn')
+    ORDER BY IsQuaHan DESC, pm.NgayMuon ASC
+    FETCH FIRST 10 ROWS ONLY";
 
             using (var cmd = new OracleCommand(sql1, conn))
             using (var r = cmd.ExecuteReader())
@@ -51,7 +56,8 @@ namespace LibraryOS.Services
                         NgayMuon = r["NgayMuon"].ToString()!,
                         TinhTrang = r["TinhTrang"].ToString()!,
                         SoCuon = Convert.ToInt32(r["SoCuon"]),
-                        IsQuaHan = r["TinhTrang"].ToString() == "Quá hạn"
+                        IsQuaHan = Convert.ToInt32(r["IsQuaHan"]) == 1,
+                        DaCoPhieuPhat = Convert.ToInt32(r["DaCoPhieuPhat"]), // ← thêm
                     });
             }
 

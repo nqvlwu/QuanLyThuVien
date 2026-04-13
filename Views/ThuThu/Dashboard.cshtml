@@ -66,11 +66,11 @@
                                 }
                                 else
                                 {
-                                    <a href="/ThuThu/PhieuPhat?maPM=@pm.MaPM"
-                                       class="btn b-ghost btn-sm"
-                                       style="color:#f5a623;border-color:#f5a62333">
+                                    <button class="btn b-ghost btn-sm"
+                                            style="color:#f5a623;border-color:#f5a62333"
+                                            onclick="chuyenLapPhat('@pm.MaPM')">
                                         Lập phạt
-                                    </a>
+                                    </button>
                                 }
                             }
                             else
@@ -110,9 +110,12 @@
 </div>
 @section Scripts {
     <script>
+                function chuyenLapPhat(maPM) {
+            window.location.href = `/ThuThu/PhieuPhat?maPM=${maPM}`;
+        }
+
         async function xacNhanTra(maPM) {
             if (!confirm(`Xác nhận trả sách cho phiếu ${maPM}?`)) return;
-
             const res  = await fetch('/ThuThu/TraSach', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
