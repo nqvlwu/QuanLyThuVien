@@ -69,6 +69,7 @@ namespace LibraryOS.Controllers
         {
             ViewData["Title"] = "Phiếu mượn";
             ViewData["ActiveMenu"] = "phieumuon";
+            _phieuMuon.SyncTrangThaiQuaHan();
             var ds = _phieuMuon.GetDanhSachPhieuMuon(tinhTrang);
             ViewBag.TinhTrang = tinhTrang;
             return View("~/Views/ThuThu/PhieuMuon.cshtml", ds); // dùng chung View
@@ -144,6 +145,7 @@ namespace LibraryOS.Controllers
         {
             ViewData["Title"] = "Dashboard";
             ViewData["ActiveMenu"] = "dashboard";
+            _phieuMuon.SyncTrangThaiQuaHan();
             var vm = _dashboard.GetQuanLyDashboard();
             return View(vm);
         }
