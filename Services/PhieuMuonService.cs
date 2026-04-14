@@ -186,6 +186,23 @@ namespace LibraryOS.Services
                 return (false, $"Lỗi: {ex.Message}");
             }
         }
+        // Gọi mỗi khi load trang phiếu mượn để sync trạng thái
+        public void SyncTrangThaiQuaHan()
+        {
+            using var conn = new OracleConnection(_conn);
+            conn.Open();
+            var sql = @"
+        UPDATE PHIEUMUON pm
+        SET TinhTrang = N'Quá hạn'
+        WHERE TinhTrang = N'Đang mượn'
+        AND EXISTS (
+            SELECT 1 FROM CT_PHIEUMUON ct
+            WHERE ct.maPM  = pm.maPM
+              AND ct.NgayTra < SYSDATE
+        )";
+            using var cmd = new OracleCommand(sql, conn);
+            cmd.ExecuteNonQuery();
+        }
         // ── Tạo phiếu mượn ─────────────────────────
         public (bool Ok, string ThongBao) TaoPhieuMuon(
             string soTheTV,

@@ -475,49 +475,28 @@ namespace LibraryOS.Services
         }
 
         // ═══════════════════════════════════════
-        // XÓA SÁCH — bắt lỗi trigger Oracle
+        // XÓA SÁCH
         // ═══════════════════════════════════════
         public (bool Ok, string ThongBao) XoaSach(string maSach)
         {
             using var conn = new OracleConnection(_conn);
-            conn.Open();
             try
             {
-                // Kiểm tra có cuốn đang mượn không
-                var sqlCheck = @"
-            SELECT COUNT(*) FROM CUONSACH cs
-            JOIN CT_PHIEUMUON ct ON ct.MaCuonSach = cs.MaCuonSach
-            JOIN PHIEUMUON   pm ON pm.maPM        = ct.maPM
-            WHERE cs.maSACH    = :maSach
-              AND pm.TinhTrang = N'Đang mượn'";
+                conn.Open();
 
-                using (var cmd = new OracleCommand(sqlCheck, conn))
-                {
-                    cmd.Parameters.Add("maSach", maSach);
-                    var soLuong = Convert.ToInt32(cmd.ExecuteScalar());
-                    if (soLuong > 0)
-                        return (false, $"Không thể xóa! Đang có {soLuong} cuốn của sách này được mượn.");
-                }
+                using var cmd = new OracleCommand("UPDATE SACH SET DaAn = 1 WHERE maSACH = :maSach", conn);
+                cmd.Parameters.Add("maSach", maSach);
 
-                // Xóa mềm: ẩn sách + tất cả cuốn
-                using (var cmd = new OracleCommand(
-                    "UPDATE SACH SET DaAn = 1 WHERE maSACH = :maSach", conn))
-                {
-                    cmd.Parameters.Add("maSach", maSach);
-                    cmd.ExecuteNonQuery();
-                }
-                using (var cmd = new OracleCommand(
-                    "UPDATE CUONSACH SET DaAn = 1 WHERE maSACH = :maSach", conn))
-                {
-                    cmd.Parameters.Add("maSach", maSach);
-                    cmd.ExecuteNonQuery();
-                }
-
-                return (true, "Xóa sách thành công!");
+                cmd.ExecuteNonQuery();
+                return (true, "Xóa (ẩn) sách thành công!");
             }
             catch (OracleException ex)
             {
-                return (false, $"Lỗi: {ex.Message}");
+                if (ex.Number >= 20000 && ex.Number <= 20999)
+                {
+                    return (false, ex.Message);
+                }
+                return (false, "Lỗi hệ thống: " + ex.Message);
             }
         }
 
@@ -527,22 +506,42 @@ namespace LibraryOS.Services
         public (bool Ok, string ThongBao) XoaTacGiaKhoiSach(string maTG, string maSach)
         {
             using var conn = new OracleConnection(_conn);
-            conn.Open();
             try
             {
+                conn.Open();
                 var sql = "DELETE FROM TACGIA_SACH WHERE maTG = :maTG AND maSACH = :maSach";
                 using var cmd = new OracleCommand(sql, conn);
+
+                // Truyền tham số
                 cmd.Parameters.Add("maTG", maTG);
                 cmd.Parameters.Add("maSach", maSach);
-                cmd.ExecuteNonQuery();
-                return (true, "Đã xóa tác giả khỏi sách.");
+
+                // Khi thực hiện dòng này, nếu vi phạm Trigger, Oracle sẽ ném lỗi ngay lập tức
+                int rows = cmd.ExecuteNonQuery();
+
+                if (rows > 0)
+                    return (true, "Xóa tác giả thành công!");
+                else
+                    return (false, "Không tìm thấy dữ liệu để xóa.");
             }
             catch (OracleException ex)
             {
-                if (ex.Message.Contains("20001"))
-                    return (false, "Không thể xóa! Đầu sách phải có ít nhất 1 tác giả.");
-                return (false, $"Lỗi: {ex.Message}");
+                // ex.Number chính là mã lỗi bạn đặt trong Trigger (ví dụ: 20001)
+                if (ex.Number == 20001)
+                {
+                    // Trả về đúng thông báo lỗi từ Trigger
+                    return (false, "Lỗi từ hệ thống: " + GetCleanMessage(ex.Message));
+                }
+                return (false, "Lỗi Database: " + ex.Message);
             }
+        }
+
+        // Hàm bổ trợ để cắt bỏ các ký tự thừa của Oracle (như ORA-20001...)
+        private string GetCleanMessage(string rawMessage)
+        {
+            if (string.IsNullOrEmpty(rawMessage)) return "";
+            // Cắt lấy phần nội dung sau dấu hai chấm thứ 2 hoặc dòng đầu tiên
+            return rawMessage.Split('\n')[0].Split(':')[1].Trim();
         }
 
         // Helper

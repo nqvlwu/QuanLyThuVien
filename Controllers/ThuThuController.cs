@@ -19,15 +19,6 @@ namespace LibraryOS.Controllers
             _phieuMuon = phieuMuon;
             _tt = tt;
         }
-
-        public IActionResult Dashboard()
-        {
-            ViewData["Title"] = "Dashboard";
-            ViewData["ActiveMenu"] = "dashboard";
-            var vm = _svc.GetThuThuDashboard();
-            return View(vm);
-        }
-
         [HttpGet]
         public IActionResult TaoPhieuMuon()
         {
@@ -96,14 +87,7 @@ namespace LibraryOS.Controllers
             return Json(new { hoTen, hopLe });
         }
 
-        public IActionResult PhieuMuon(string? tinhTrang = null)
-        {
-            ViewData["Title"] = "Phiếu mượn";
-            ViewData["ActiveMenu"] = "phieumuon";
-            var ds = _phieuMuon.GetDanhSachPhieuMuon(tinhTrang);
-            ViewBag.TinhTrang = tinhTrang;
-            return View(ds);
-        }
+        
         [HttpPost]
         public IActionResult TraSach(string maPM)
         {
@@ -163,6 +147,28 @@ namespace LibraryOS.Controllers
             ViewBag.Keyword = kw ?? "";
             ViewBag.TrangThai = trangThai ?? "";
             return View(_tt.GetTheTV(kw, trangThai));
+        }
+        public IActionResult PhieuMuon(string? tinhTrang = null)
+        {
+            ViewData["Title"] = "Phiếu mượn";
+            ViewData["ActiveMenu"] = "phieumuon";
+
+            _phieuMuon.SyncTrangThaiQuaHan(); // ← thêm dòng này
+
+            var ds = _phieuMuon.GetDanhSachPhieuMuon(tinhTrang);
+            ViewBag.TinhTrang = tinhTrang;
+            return View(ds);
+        }
+
+        public IActionResult Dashboard()
+        {
+            ViewData["Title"] = "Dashboard";
+            ViewData["ActiveMenu"] = "dashboard";
+
+            _phieuMuon.SyncTrangThaiQuaHan(); // ← thêm dòng này
+
+            var vm = _svc.GetThuThuDashboard();
+            return View(vm);
         }
         public IActionResult Sach() { ViewData["Title"] = "Danh mục sách"; ViewData["ActiveMenu"] = "sach"; return View(); }
         public IActionResult CuonSach() { ViewData["Title"] = "Cuốn sách"; ViewData["ActiveMenu"] = "cuonsach"; return View(); }
